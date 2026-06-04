@@ -1,0 +1,113 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git stash*)",
+      "Bash(git checkout -b *)",
+      "Bash(git switch -c *)",
+      "Bash(git revert*)",
+      "Bash(git symbolic-ref*)",
+      "Bash(git rev-parse*)",
+      "Bash(git ls-files*)",
+      "Bash(ls*)",
+      "Bash(wc*)",
+      "Bash(cat*)",
+      "Bash(head*)",
+      "Bash(tail*)",
+      "Bash(sort*)",
+      "Bash(mkdir*)",
+      "Bash(python .claude/bin/*)",
+      "Bash(python3 .claude/bin/*)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean -f *)",
+      "Bash(git branch -D *)",
+      "Bash(npm publish *)",
+      "Bash(rm -rf *)",
+      "Bash(rm -r *)"
+    ],
+    "ask": [
+      "Bash(git checkout -- *)",
+      "Bash(git restore *)",
+      "Bash(git push *)",
+      "Bash(rm *)",
+      "Bash(del *)",
+      "Bash(npm install *)",
+      "Bash(pnpm install *)",
+      "Bash(yarn add *)",
+      "Bash(pip install *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "CDN CHECK: Scan new_string for URLs containing '@latest'. If found, output 'BLOCKED: @latest CDN — pin to specific version'. Otherwise output nothing. Tool input: $ARGUMENTS"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "PRE-PUSH: Check if pushing to the project's default branch (main, master, develop, or trunk). If so, output 'WARN: Direct push to default branch — use a feature branch'. Otherwise output nothing. Tool input: $ARGUMENTS",
+            "if": "Bash(git push *)"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Commit created. Consider running /wrap if this is end of session.\"}}'",
+            "if": "Bash(git commit *)"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"CONTEXT PRESERVATION: Before compacting, note the current work state. Check: (1) Which file is being edited, (2) Any pending changes not yet committed, (3) Which agents were recommended but not yet run. Carry these forward through compaction.\"}}'",
+            "statusMessage": "Preserving context...",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "STATUS=$(git status --porcelain 2>/dev/null | head -5) && if [ -n \"$STATUS\" ]; then echo \"{\\\"systemMessage\\\":\\\"Uncommitted changes detected. Consider running /wrap before closing.\\\"}\"; else echo '{}'; fi",
+            "statusMessage": "Checking session state..."
+          },
+          {
+            "type": "command",
+            "command": "python .claude/bin/plan_status.py 2>/dev/null || python3 .claude/bin/plan_status.py 2>/dev/null || true",
+            "statusMessage": "Plan status...",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}
