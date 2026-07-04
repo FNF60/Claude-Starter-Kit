@@ -1,17 +1,6 @@
----
-name: onboard
-description: "TRIGGER on first conversation in an EXISTING project, when CLAUDE.md is missing or full of [FILL] placeholders, or when user says 'learn the codebase', 'onboard', 'study this project', 'figure out what we have'. Scans the repo, infers stack/conventions/risk surfaces from real signals, mines git history for anti-patterns, and drafts CLAUDE.md sections so the user only edits, not authors."
-argument-hint: "[--deep | --quick | --refresh]"
----
+# Existing-Project Scan
 
-# Onboard — Learn an Existing Codebase
-
-The starter kit was originally written for greenfield projects. `/onboard` is what makes it work for repos that already have code, conventions, history, and opinions. It runs **before** anything else (including `/setup`) and produces the inputs every other skill depends on.
-
-**When to run:**
-- First time the kit is dropped into an existing project
-- Whenever CLAUDE.md feels out of sync with the code
-- After a major refactor or framework change (`/onboard --refresh`)
+The procedure `/setup` follows when it detects an **existing codebase**. It scans the repo, infers stack/conventions/risk surfaces from real signals, mines git history for anti-patterns, and drafts CLAUDE.md sections so the user only edits, not authors. Greenfield projects never reach this file — `/setup` handles them inline.
 
 **What it produces:**
 - A drafted CLAUDE.md with real values (not `[FILL]` placeholders)
@@ -22,6 +11,8 @@ The starter kit was originally written for greenfield projects. `/onboard` is wh
 ---
 
 ## Modes
+
+`/setup` passes through whichever flag the user gave:
 
 | Mode | When | Time |
 |------|------|------|
@@ -50,7 +41,7 @@ Q: "I found existing Claude config in this repo. How should I handle it?"
 
 3. **Detect repo root.** Use `git rev-parse --show-toplevel`. If not a git repo, ask the user to confirm the root before scanning further.
 
-4. **Detect default branch.** `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'`. Fall back to checking which of `main`, `master`, `develop`, `trunk` exists. Record for hooks.
+4. **Detect default branch.** `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'`. Fall back to checking which of `main`, `master`, `develop`, `trunk` exists. Record it in CLAUDE.md's Commit & Workflow Policy.
 
 ---
 
@@ -246,7 +237,7 @@ Q3: "Don't-touch list — anything to remove?" (header: "Off-limits", multiSelec
 
 Write `CLAUDE.md` at the repo root with sections populated from the scan. Every value is either **discovered** (auto-filled, marked as such) or **declared** (from user answers). No empty `[FILL]` placeholders.
 
-Use the new CLAUDE.md template structure (see the kit's `CLAUDE.md` — it's been redesigned to map to this output).
+Use the kit's `CLAUDE.md` template structure — it's designed to map to this output.
 
 For each section, if the data is missing, **leave a one-line prompt explaining what's needed and why** — never a generic `[FILL]`.
 
@@ -256,15 +247,14 @@ For each section, if the data is missing, **leave a one-line prompt explaining w
 
 If `.claude/settings.json` exists with non-kit content, **merge**:
 
-1. Read existing `permissions.allow`, `permissions.deny`, `permissions.ask`, `hooks`.
+1. Read existing `permissions.allow`, `permissions.deny`, `permissions.ask`.
 2. Add project-specific entries from the scan:
    - Test command -> `Bash(<cmd>*)` to allow
    - Lint/format/type-check commands -> allow
    - Build/dev commands -> allow
    - Detected dangerous commands (e.g., `npm publish`, deploy scripts) -> deny or ask
-3. Adjust the `git push` hook to use the detected default branch, not hardcoded `main|master`.
-4. Drop the CDN `@latest` hook if no web/frontend code was detected.
-5. Save. Diff-print what changed.
+3. The kit ships **no hooks**. If the user wants hard git-command blocking, point them at the `git-guardrails` skill.
+4. Save. Diff-print what changed.
 
 ---
 
@@ -314,8 +304,8 @@ Print a 6-line summary in chat with a link to the full report.
 
 - **Read before write.** Phase 1 (conflict detection) is non-negotiable. If we'd overwrite something, ask first.
 - **Discovered != Declared.** Auto-filled values are marked as such so the user knows what came from the scan vs what they confirmed.
-- **Never ask what the code already answered.** This is the entire reason `/onboard` exists.
+- **Never ask what the code already answered.** This is the entire reason this scan exists.
 - **Confidence labels.** When something is inferred (not certain), label it `(inferred)` in CLAUDE.md.
-- **Idempotent.** Re-running `/onboard --refresh` updates discovered values but preserves user edits to declared sections.
+- **Idempotent.** Re-running `/setup --refresh` updates discovered values but preserves user edits to declared sections.
 - **Respect existing AI config.** If `.cursorrules` or `AGENTS.md` exists, surface their content in the report so the user can decide what to port over.
 - **No silent assumptions.** Every section in CLAUDE.md should be traceable to either a scan finding or a user answer.

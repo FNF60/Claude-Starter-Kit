@@ -5,7 +5,7 @@ Claude Code Starter Kit — installer.
 Copies the kit into a target project directory with conflict awareness:
 - Detects existing CLAUDE.md, .claude/, and other AI tooling configs
 - Shows diffs and offers merge / replace / skip / abort per file
-- After install, prints a one-liner for the user to run /onboard or /setup
+- After install, prints a one-liner for the user to run /setup
 
 Usage:
     python install.py [target_dir]
@@ -28,23 +28,35 @@ from pathlib import Path
 KIT_FILES = [
     "CLAUDE.md",
     ".claude/settings.json",
+    ".claude/settings.jsonc",
     ".claude/SETTINGS_NOTES.md",
-    ".claude/bin/plan_status.py",
     ".claude/bin/save_conversation.py",
-    ".claude/skills/onboard/skill.md",
+    # Core workflow skills
     ".claude/skills/setup/skill.md",
-    ".claude/skills/plan/skill.md",
+    ".claude/skills/setup/ONBOARD-SCAN.md",
     ".claude/skills/wrap/skill.md",
-    ".claude/skills/check/skill.md",
-    ".claude/skills/guard/skill.md",
-    ".claude/skills/diff/skill.md",
-    ".claude/skills/undo/skill.md",
-    ".claude/skills/look/skill.md",
     ".claude/skills/save-conversation/SKILL.md",
-    ".claude/agents/code-reviewer.md",
-    ".claude/agents/error-trap-monitor.md",
-    ".claude/agents/security-reviewer.md",
-    ".claude/plans/.gitkeep",
+    # Engineering skill set
+    ".claude/skills/plan-interview/SKILL.md",
+    ".claude/skills/codebase-design/SKILL.md",
+    ".claude/skills/codebase-design/DEEPENING.md",
+    ".claude/skills/codebase-design/DESIGN-IT-TWICE.md",
+    ".claude/skills/domain-modeling/SKILL.md",
+    ".claude/skills/domain-modeling/ADR-FORMAT.md",
+    ".claude/skills/domain-modeling/CONTEXT-FORMAT.md",
+    ".claude/skills/improve-codebase-architecture/SKILL.md",
+    ".claude/skills/improve-codebase-architecture/HTML-REPORT.md",
+    ".claude/skills/diagnosing-bugs/SKILL.md",
+    ".claude/skills/diagnosing-bugs/scripts/hitl-loop.template.sh",
+    ".claude/skills/tdd/SKILL.md",
+    ".claude/skills/tdd/mocking.md",
+    ".claude/skills/tdd/tests.md",
+    ".claude/skills/code-review/SKILL.md",
+    ".claude/skills/handoff/SKILL.md",
+    ".claude/skills/loop-me/SKILL.md",
+    ".claude/skills/obsidian-vault/SKILL.md",
+    ".claude/skills/git-guardrails/SKILL.md",
+    ".claude/skills/git-guardrails/scripts/block-dangerous-git.sh",
 ]
 
 # Other AI tooling configs we want to surface — not to overwrite, just to mention.
@@ -274,7 +286,7 @@ def main():
         print("\nExisting AI tooling detected:")
         for p in other_tooling:
             print(f"  - {p}")
-        print("These are NOT touched by the installer. /onboard will read them and surface their content.")
+        print("These are NOT touched by the installer. /setup will read them and surface their content.")
         choice = prompt(
             "Continue?",
             [('y', "Yes, install alongside"), ('n', "No, abort")],
@@ -303,10 +315,8 @@ def main():
         print(f"  {k}: {v}")
 
     print("\nNext step:")
-    if any(p in other_tooling for p in (".cursorrules", "AGENTS.md")) or (args.target / "CLAUDE.md").exists():
-        print("  Run /onboard in Claude Code — it will read your existing AI config and merge as needed.")
-    else:
-        print("  Run /setup in Claude Code — it will detect whether this is a fresh start or existing codebase.")
+    print("  Run /setup in Claude Code — it detects whether this is a fresh start or an existing")
+    print("  codebase (reading any existing AI config and merging as needed).")
 
     print()
 

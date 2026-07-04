@@ -1,113 +1,231 @@
 {
   "permissions": {
+    "defaultMode": "default",
+    "additionalDirectories": [],
     "allow": [
-      "Bash(git status*)",
-      "Bash(git log*)",
-      "Bash(git diff*)",
-      "Bash(git branch*)",
-      "Bash(git add*)",
-      "Bash(git commit*)",
-      "Bash(git stash*)",
-      "Bash(git checkout -b *)",
-      "Bash(git switch -c *)",
-      "Bash(git revert*)",
-      "Bash(git symbolic-ref*)",
-      "Bash(git rev-parse*)",
-      "Bash(git ls-files*)",
-      "Bash(ls*)",
-      "Bash(wc*)",
-      "Bash(cat*)",
-      "Bash(head*)",
-      "Bash(tail*)",
-      "Bash(sort*)",
-      "Bash(mkdir*)",
-      "Bash(python .claude/bin/*)",
-      "Bash(python3 .claude/bin/*)"
-    ],
-    "deny": [
-      "Bash(git push --force *)",
-      "Bash(git push -f *)",
-      "Bash(git reset --hard *)",
-      "Bash(git clean -f *)",
-      "Bash(git branch -D *)",
-      "Bash(npm publish *)",
-      "Bash(rm -rf *)",
-      "Bash(rm -r *)"
+      "Read(**)",
+      "Read(//**)",
+      "Edit(**)",
+      "Write(**)",
+      "MultiEdit(**)",
+
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(file *)",
+      "Bash(stat *)",
+      "Bash(tree *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(rg *)",
+      "Bash(which *)",
+      "Bash(pwd)",
+      "Bash(echo *)",
+      "Bash(date)",
+      "Bash(env)",
+      "Bash(printenv *)",
+      "Bash(cd *)",
+      "Bash(diff *)",
+      "Bash(sort *)",
+      "Bash(uniq *)",
+      "Bash(cut *)",
+      "Bash(basename *)",
+      "Bash(dirname *)",
+      "Bash(realpath *)",
+      "Bash(mkdir *)",
+      "Bash(touch *)",
+      "Bash(cp *)",
+      "Bash(make *)",
+
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git stash list)",
+      "Bash(git fetch *)",
+      "Bash(git blame *)",
+      "Bash(git tag)",
+      "Bash(git rev-parse *)",
+      "Bash(git ls-files *)",
+      "Bash(git describe *)",
+      "Bash(git config --get *)",
+      "Bash(git config --list)",
+      "Bash(git add *)",
+
+      "Bash(npm install *)",
+      "Bash(npm install)",
+      "Bash(npm ci *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)",
+      "Bash(npm test)",
+      "Bash(npm ls *)",
+      "Bash(npm outdated *)",
+      "Bash(npm exec *)",
+      "Bash(npx *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm run *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm exec *)",
+      "Bash(pnpm dlx *)",
+      "Bash(yarn install *)",
+      "Bash(yarn add *)",
+      "Bash(yarn run *)",
+      "Bash(yarn test *)",
+      "Bash(yarn build *)",
+      "Bash(bun install *)",
+      "Bash(bun add *)",
+      "Bash(bun run *)",
+      "Bash(bun test *)",
+      "Bash(bunx *)",
+
+      "Bash(pip install *)",
+      "Bash(pip list *)",
+      "Bash(pip show *)",
+      "Bash(pip freeze *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(pytest *)",
+      "Bash(pytest)",
+      "Bash(ruff *)",
+      "Bash(black *)",
+      "Bash(mypy *)",
+      "Bash(flake8 *)",
+      "Bash(isort *)",
+      "Bash(poetry install *)",
+      "Bash(poetry add *)",
+      "Bash(poetry run *)",
+      "Bash(uv *)",
+      "Bash(uvicorn *)",
+
+      "Bash(cargo build *)",
+      "Bash(cargo test *)",
+      "Bash(cargo run *)",
+      "Bash(cargo check *)",
+      "Bash(cargo clippy *)",
+      "Bash(cargo fmt *)",
+      "Bash(go build *)",
+      "Bash(go test *)",
+      "Bash(go run *)",
+      "Bash(go vet *)",
+      "Bash(go fmt *)",
+      "Bash(go mod *)",
+
+      "Bash(mvn *)",
+      "Bash(gradle *)",
+      "Bash(./gradlew *)",
+      "Bash(./mvnw *)",
+      "Bash(java -version)",
+      "Bash(javac *)",
+
+      "Bash(node *)",
+      "Bash(tsc *)",
+      "Bash(eslint *)",
+      "Bash(prettier *)",
+
+      "Bash(docker ps *)",
+      "Bash(docker images *)",
+      "Bash(docker logs *)",
+      "Bash(docker build *)",
+      "Bash(docker inspect *)",
+      "Bash(docker version)",
+      "Bash(docker info)",
+      "Bash(docker compose build *)",
+      "Bash(docker compose up *)",
+      "Bash(docker compose down *)",
+      "Bash(docker compose logs *)",
+      "Bash(docker compose ps *)",
+      "Bash(docker compose restart *)",
+
+      "WebFetch(domain:docs.claude.com)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:npmjs.com)",
+      "WebFetch(domain:developer.mozilla.org)",
+      "WebFetch(domain:stackoverflow.com)",
+      "WebFetch(domain:docs.python.org)",
+      "WebFetch(domain:pkg.go.dev)",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:docs.n8n.io)"
     ],
     "ask": [
-      "Bash(git checkout -- *)",
-      "Bash(git restore *)",
+      "Bash(git commit *)",
       "Bash(git push *)",
+      "Bash(git reset *)",
+      "Bash(git checkout *)",
+      "Bash(git restore *)",
+      "Bash(git rebase *)",
+      "Bash(git merge *)",
+      "Bash(git clean *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git revert *)",
+
       "Bash(rm *)",
-      "Bash(del *)",
-      "Bash(npm install *)",
-      "Bash(pnpm install *)",
-      "Bash(yarn add *)",
-      "Bash(pip install *)"
-    ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "CDN CHECK: Scan new_string for URLs containing '@latest'. If found, output 'BLOCKED: @latest CDN — pin to specific version'. Otherwise output nothing. Tool input: $ARGUMENTS"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "PRE-PUSH: Check if pushing to the project's default branch (main, master, develop, or trunk). If so, output 'WARN: Direct push to default branch — use a feature branch'. Otherwise output nothing. Tool input: $ARGUMENTS",
-            "if": "Bash(git push *)"
-          }
-        ]
-      }
+      "Bash(rmdir *)",
+      "Bash(mv *)",
+      "Bash(chmod *)",
+      "Bash(chown *)",
+      "Bash(kill *)",
+      "Bash(pkill *)",
+      "Bash(sudo *)",
+
+      "Bash(docker run *)",
+      "Bash(docker exec *)",
+      "Bash(docker rm *)",
+      "Bash(docker rmi *)",
+      "Bash(docker system prune *)",
+
+      "Bash(npm publish *)",
+      "Bash(cargo publish *)"
     ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"Commit created. Consider running /wrap if this is end of session.\"}}'",
-            "if": "Bash(git commit *)"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"CONTEXT PRESERVATION: Before compacting, note the current work state. Check: (1) Which file is being edited, (2) Any pending changes not yet committed, (3) Which agents were recommended but not yet run. Carry these forward through compaction.\"}}'",
-            "statusMessage": "Preserving context...",
-            "async": true
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "STATUS=$(git status --porcelain 2>/dev/null | head -5) && if [ -n \"$STATUS\" ]; then echo \"{\\\"systemMessage\\\":\\\"Uncommitted changes detected. Consider running /wrap before closing.\\\"}\"; else echo '{}'; fi",
-            "statusMessage": "Checking session state..."
-          },
-          {
-            "type": "command",
-            "command": "python .claude/bin/plan_status.py 2>/dev/null || python3 .claude/bin/plan_status.py 2>/dev/null || true",
-            "statusMessage": "Plan status...",
-            "async": true
-          }
-        ]
-      }
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/*)",
+      "Bash(sudo rm *)",
+      "Bash(mkfs *)",
+      "Bash(mkfs.* *)",
+      "Bash(dd *)",
+      "Bash(shred *)",
+      "Bash(sudo bash -c *)",
+      "Bash(sudo sh -c *)",
+      "Bash(sudo su *)",
+      "Bash(su -*)",
+      "Bash(curl * | bash)",
+      "Bash(curl * | sh)",
+      "Bash(wget * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(* > /dev/sd*)",
+
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/.ssh/**)",
+      "Read(**/id_rsa*)",
+      "Read(**/id_ed25519*)",
+      "Read(**/.aws/**)",
+      "Read(**/.config/gcloud/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/.npmrc)",
+      "Read(**/.pypirc)",
+      "Read(**/.netrc)",
+      "Read(**/secrets/**)",
+      "Read(**/.docker/config.json)",
+      "Read(**/.kube/config)",
+      "Bash(cat *.env*)",
+      "Bash(cat *.pem)",
+      "Bash(cat *id_rsa*)",
+      "Bash(cat *.aws/*)"
     ]
   }
 }

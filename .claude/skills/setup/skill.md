@@ -1,22 +1,23 @@
 ---
 name: setup
-description: "TRIGGER on first conversation in a project, or when user says 'setup', 'configure', 'customize this'. Routes to /onboard for existing codebases or runs the greenfield questionnaire for new ones. Tailors CLAUDE.md, hooks, permissions, skills, and agents to this specific project."
+description: "TRIGGER on the first conversation in a project, or when the user says 'setup', 'configure', 'customize this', 'onboard', 'learn the codebase', 'study this project'. Detects whether the project is greenfield or an existing codebase and handles both: for existing repos it scans and drafts CLAUDE.md from real signals; for new ones it runs a guided questionnaire. Tailors CLAUDE.md, permissions, and skills to this project."
+argument-hint: "[--deep | --quick | --refresh]"
 ---
 
 # Setup — Project Configuration
 
-Two paths through this skill. Pick the right one in Phase 0 and don't ask redundant questions.
+One skill, two paths. Phase 0 decides which; don't ask redundant questions.
 
 ## Phase 0: Route — new or existing?
 
-**Before any other question**, check whether the project has content:
+**Before any other question**, check whether the project already has content:
 
 ```bash
 git ls-files | head -1
 ls -la
 ```
 
-- If there are tracked source files **other than** `README.md` / `LICENSE` / `.gitignore` / `CLAUDE.md` / `.claude/`: it's an **existing project** → call `/onboard` and stop. `/onboard` will run its own questionnaire and produce the artifacts setup would have. Setup is done.
+- If there are tracked source files **other than** `README.md` / `LICENSE` / `.gitignore` / `CLAUDE.md` / `.claude/`: it's an **existing project** → run the **Existing-Project Scan** in [ONBOARD-SCAN.md](ONBOARD-SCAN.md) and stop when it finishes. That procedure has its own questionnaire and produces CLAUDE.md, the settings merge, and `.claude/onboarding.md`. Pass through any `--quick` / `--deep` / `--refresh` flag the user gave.
 - If there are no source files yet (or only the kit's own files + README/LICENSE): it's a **new project** → continue with Phase 1 below.
 
 If ambiguous, ask one question:
@@ -29,13 +30,13 @@ Q: "Is this a fresh start or an existing codebase?" (header: "Project state")
   - "Hybrid — some code, but mostly new direction"
 ```
 
-`Existing` and `Hybrid` both route to `/onboard`. `Fresh` continues here.
+`Existing` and `Hybrid` both route to the Existing-Project Scan. `Fresh` continues here.
 
 ---
 
 ## Greenfield Track (no existing code)
 
-Walk the user through structured questionnaires to configure CLAUDE.md, hooks, permissions, skills, and agents.
+Walk the user through structured questionnaires to configure CLAUDE.md, permissions, and skills.
 
 ## Phase 1: Project Identity (Round 1)
 
@@ -84,10 +85,10 @@ Q1: "What's the riskiest part of this project?" (header: "Risk", multiSelect: tr
   - "Nothing critical — it's a personal/learning project"
 
 Q2: "What testing approach?" (header: "Tests")
+  - "Test-driven — write the test first (use the /tdd skill)"
   - "Full test suite (jest, pytest, etc.) — run on every change"
   - "Some tests — run manually"
   - "No tests yet — help me set them up"
-  - "No tests needed for this project"
 
 Q3: "Commit policy?" (header: "Commits")
   - "Auto-commit on /wrap"
@@ -103,30 +104,34 @@ Q4: "What should NEVER happen?" (header: "Guardrails", multiSelect: true)
 ```
 
 **After Round 2:**
-- Update `.claude/settings.json` permissions based on answers
-- Write the chosen commit policy into CLAUDE.md "Commit & Workflow Policy"
-- "Push to default branch" guardrail → keep the kit's push hook active
-- "Commit secrets" guardrail → enable a secret-scan pre-commit hook (note in settings)
+- Update `.claude/settings.json` permissions based on answers (add stack-appropriate `allow` entries; move risky commands to `ask`/`deny`).
+- Write the chosen commit policy into CLAUDE.md "Commit & Workflow Policy".
+- "Push to default branch" guardrail → record it in CLAUDE.md's Critical Rules; the settings profile already routes `git push` through `ask`. For hard blocking, offer to run the `git-guardrails` skill.
+- "Commit secrets" guardrail → note it in CLAUDE.md "Security Notes"; the settings `deny` list already blocks reading common secret files (`.env`, `*.pem`, cloud creds).
 
 ## Phase 3: Workflow Preferences (Round 3)
+
+All skills in `.claude/skills/` are always available; this round is about which ones you want to lean on, and how proactive Claude should be.
 
 ```
 AskUserQuestion:
 
-Q1: "Which skills do you want active?" (header: "Skills", multiSelect: true)
-  - "/plan — Feature planning with intensity tiers"
-  - "/wrap — Autonomous session close"
-  - "/check — Post-build health validation"
-  - "/guard — Pre-edit safety check"
-  - "/diff — Smart change review with risk levels"
-  - "/undo — Targeted rollback with safety nets"
-  - "/look — Visual QA with Playwright"
+Q1: "Which skills do you expect to use most?" (header: "Skills", multiSelect: true)
+  - "/plan-interview — get interviewed hard to turn a rough idea into a step-by-step plan"
+  - "/wrap — autonomous session close (review, commit, memory)"
+  - "/tdd — red → green test-driven implementation"
+  - "/code-review — two-axis (standards + spec) review of a diff"
+  - "/diagnosing-bugs — structured loop for hard bugs and regressions"
+  - "/codebase-design & /domain-modeling — architecture + domain language"
+  - "/improve-codebase-architecture — scan for deepening opportunities"
+  - "/handoff & /loop-me — session handoff and workflow specs"
+  - "/save-conversation — export a verbatim session transcript"
   - "All of them (recommended)"
 
 Q2: "Should I auto-trigger skills or wait for you?" (header: "Auto-trigger")
-  - "Auto-trigger — run /check after builds, /guard before risky edits"
+  - "Auto-trigger — e.g. suggest /plan-interview before a big build, /code-review after a feature"
   - "Manual only — I'll call skills when I want them"
-  - "Auto for safety (/guard, /check), manual for planning"
+  - "Auto for safety (plan before risky work), manual for the rest"
 
 Q3: "How should I communicate?" (header: "Communication")
   - "Terse — just do the work, minimal commentary"
@@ -153,12 +158,13 @@ After questionnaires, prep the repo:
 ```
 === Setup Complete (greenfield) ===
 
-  Project type: [stack]
+  Project type:  [stack]
   Commit policy: [chosen]
   Communication: [chosen]
-  Skills active: [list]
+  Skills favored: [list]
   Risk surfaces seeded: [from Q1]
-  Next: Use /plan to design your first feature.
+  Next: Describe your first feature — run /plan-interview to turn it into a
+        step-by-step plan, then build it, using /tdd if you chose test-first.
 ===
 ```
 
@@ -168,20 +174,18 @@ After questionnaires, prep the repo:
 AskUserQuestion:
 
 Q: "Want any of these extras?" (header: "Extras", multiSelect: true)
-  - "Additional agents (error-trap-monitor, security-reviewer run proactively)"
-  - "Playwright visual QA (/look skill with browser screenshots)"
-  - "Custom hooks (auto-lint on save, auto-test on commit)"
+  - "Hard git guardrails — block push/reset --hard/clean/branch -D via a hook (runs the /git-guardrails skill)"
+  - "Obsidian vault integration — let Claude read/write your notes vault (/obsidian-vault)"
+  - "Session transcripts — remember /save-conversation for a verbatim record"
   - "None — the basics are fine"
 ```
 
-Configure selected extras.
+Configure selected extras. For "Hard git guardrails", run the `git-guardrails` skill.
 
 ---
 
 ## Key Rules
 
-- **Route first**: existing → `/onboard`, fresh → questionnaire. Never run greenfield questions against an existing codebase — that's what `/onboard` exists to prevent.
+- **Route first**: existing → the Existing-Project Scan, fresh → questionnaire. Never run greenfield questions against an existing codebase — that's what the scan exists to prevent.
 - **Never skip questionnaires** in the greenfield track — the whole point is guided setup.
-- **Save answers to memory** so future sessions know the project context.
-- **Update files based on answers** — don't just ask and forget. CLAUDE.md, settings.json, and skill descriptions should reflect the user's choices.
-- **Re-runnable** — if the user re-runs setup, route again in Phase 0. For existing projects, prefer `/onboard --refresh` over re-running setup.
+- **Save answers to memory** so future sessions know the pr

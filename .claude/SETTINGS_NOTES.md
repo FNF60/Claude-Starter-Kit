@@ -1,45 +1,38 @@
 # settings.json — notes for existing projects
 
-`settings.json` ships with kit defaults that work everywhere but are tuned for nothing in particular. The installer and `/onboard` will adjust it for your project. Three things to know:
+The kit ships **two** files:
 
-## 1. Merge, don't overwrite
+- **`settings.json`** — the active permissions profile Claude Code reads. Valid JSON, so the installer can merge it.
+- **`settings.jsonc`** — the *same* profile with inline comments explaining every block. Reference only; Claude Code doesn't load it. Read it to understand a rule before you change it, then mirror the change into `settings.json`.
 
-If you already have a `.claude/settings.json` from a previous setup, the installer (`install.py`) will:
-1. Show you a diff before doing anything.
-2. Offer to **merge** (keep your customizations, add what's missing), **replace** (use kit defaults), or **abort**.
+This profile is a scoped "middle ground": routine read/inspect/build commands auto-run, state-changing or destructive commands prompt or are blocked. There are **no hooks** — git safety comes from the `ask`/`deny` permission rules, and if you want hard git-command blocking you can install it on demand with the `git-guardrails` skill.
 
-If you're hand-installing without the installer, look at the kit's settings.json as a set of *additions*, not a replacement. The keys to focus on:
-- `permissions.allow` — add the kit's git/utility entries to yours
-- `permissions.deny` — add the kit's destructive-command blocks
-- `hooks.PreCompact` and `hooks.Stop` — these add session continuity features that almost certainly don't conflict with what you have
+## 1. How evaluation works
 
-## 2. Project-specific permissions
+Order is **deny → ask → allow → defaultMode**, first match wins. A trailing `*` is optional, so `Bash(git status *)` also matches bare `git status`. Matching is shell-operator aware: `Bash(cat *)` will **not** match `cat x && rm y` — chained commands fall through to a prompt. That's why the plain `allow` rules stay safe.
 
-The kit's `permissions.allow` is generic — it doesn't know your test/lint/build commands. After `/onboard` runs, expect to see entries like:
+- `allow` — read-only/inspection shell, package managers, test/lint/build runners, git read + `git add`, and a doc-domain WebFetch allowlist.
+- `ask` — reversible-but-consequential actions you want to eyeball: `git commit`/`push`/`reset`/`checkout`/`rebase`/`merge`, `rm`/`mv`/`chmod`, `docker run`/`exec`/`rm`, and publishes.
+- `deny` — catastrophic or exfiltration commands (`rm -rf /`, `dd`, `curl … | sh`) and reads of common secret locations (`.env`, `.ssh`, `*.pem`, cloud creds).
 
-```json
-"Bash(pnpm test*)",
-"Bash(pnpm lint*)",
-"Bash(pnpm typecheck*)",
-"Bash(pnpm build*)"
-```
+## 2. Merge, don't overwrite
 
-added to `allow`. If your project uses a different runner (`make test`, `pytest`, `cargo test`, etc.), `/onboard` adds the right entries for you. Hand-edit if anything is missing.
+If you already have a `.claude/settings.json`, `install.py` (and `/setup`) will show a diff and offer **merge** (union `allow`/`ask`/`deny`, keep your entries), **replace**, or **abort**. Hand-installing? Treat this file's lists as *additions* to yours.
 
-## 3. Default branch in the push hook
+## 3. Project-specific permissions
 
-The kit's `PreToolUse` push hook warns on direct pushes to **main, master, develop, or trunk**. If your project's default branch has a different name (`production`, `trunk-stable`, etc.), `/onboard` rewrites the hook prompt to use the detected branch. You can also edit it directly — look for the `PRE-PUSH` prompt string.
+The `allow` list is generic — it doesn't know your exact test/lint/build commands, though it already covers the common runners (`npm`/`pnpm`/`yarn`/`bun`, `pytest`, `cargo`, `go`, `mvn`/`gradle`). After `/setup`, expect entries tailored to the project's actual commands. Hand-edit if anything is missing.
 
-## 4. CDN `@latest` check — frontend only
+## 4. Letting the Read tool see outside the project
 
-The `Edit` hook that blocks `@latest` CDN URLs is for projects with browser-loaded scripts. If your project is purely backend (CLI, API server with no embedded frontend), `/onboard` will offer to drop this hook entirely. You can also remove the entire `PreToolUse > matcher: "Edit"` block by hand.
+The native Read/Edit/Write tools are confined to the project directory plus whatever you add to `permissions.additionalDirectories`. Bash read commands (`cat`/`head`/`grep`/`find`/`ls`) are **not** gated by that list, so you already get broad read via Bash. Add a path to `additionalDirectories` only if you want the structured Read tool to reach outside the project. See the commented `settings.jsonc` for platform examples.
 
 ## 5. Hand-editing checklist
 
-If you're merging by hand, after edits run:
+After editing, confirm the JSON still parses:
 
 ```bash
 python3 -c "import json; json.load(open('.claude/settings.json'))"
 ```
 
-If that prints nothing, the JSON is valid. If it errors, fix the syntax before reopening Claude Code.
+No output means valid. If it errors, fix the syntax before reopening Claude Code. (Edit `settings.json`, not `settings.jsonc` — the `.jsonc` file has comments and is intentionally not valid JSON.)

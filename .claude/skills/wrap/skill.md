@@ -17,7 +17,7 @@ Close a coding session. **Zero user prompts by default** — review, fix, commit
 ### 0. Load policy (no user prompt)
 
 From CLAUDE.md "Commit & Workflow Policy":
-- `commit_policy`: auto-commit | stage-only | draft-PR | never-commit (default: `auto-commit` if CLAUDE.md is silent — but `/onboard` should have set this)
+- `commit_policy`: auto-commit | stage-only | draft-PR | never-commit (default: `auto-commit` if CLAUDE.md is silent — but `/setup` should have set this)
 - `commit_convention`: regex or template extracted from git history
 - `default_branch`: detected branch name
 - `pr_template_path`: path to `.github/PULL_REQUEST_TEMPLATE.md` if it exists
@@ -176,7 +176,6 @@ If `pr_template_path` is set and we're on a feature branch with no open PR: when
 - **Read policy from CLAUDE.md** — never assume auto-commit.
 - **Auto-fix only what's safe** — debug artifacts, trailing whitespace. Project-specific fixes only when CLAUDE.md authorizes.
 - **Never `git add -A`** — stage only reviewed files by name.
-- **Never read plan docs** — waste of context during wrap.
 - **Memory is non-negotiable** — always written, even if nothing to commit.
 - **Risk surfaces are not auto-fixed** — only flagged.
 - **Multiple sessions per day are normal** — use letter suffixes, don't overwrite.
