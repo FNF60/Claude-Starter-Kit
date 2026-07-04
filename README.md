@@ -35,7 +35,7 @@ your-project/
 │       └── git-guardrails/             <- /git-guardrails — block dangerous git commands
 ```
 
-There are no bundled agents and no `plans/` directory — the engineering skills below cover review, design, and diagnosis, and Claude plans well on its own when asked.
+There are no bundled agents and no `plans/` directory: the engineering skills below cover review, design, and diagnosis, and Claude plans well on its own when asked.
 
 ## Setup — one command, either track
 
