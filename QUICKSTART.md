@@ -8,7 +8,7 @@ A small starter pack you drop into a project folder so Claude **remembers how yo
 
 ## Get started in 3 steps
 
-1. **Put this folder's contents into your project.** Copy them into the folder where your project lives (or will live).
+1. **Add the kit to your project.** Brand-new or empty project? Copy this folder's contents into it. Already has files (and maybe its own README)? Don't copy over them — instead just tell Claude where this kit is and point it at your project (or run `python install.py`), and it adds its files *without* overwriting your README.
 2. **Open the project in Claude Code and say:** `run /setup`
 3. **Answer a few short questions.** Claude figures out whether your project is brand new or already has code, then sets itself up to match. Done.
 

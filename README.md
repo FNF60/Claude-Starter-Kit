@@ -39,13 +39,14 @@ There are no bundled agents and no `plans/` directory: the engineering skills be
 
 ## Setup — one command, either track
 
-`/setup` detects whether it's landing in a fresh project or an existing codebase and does the right thing. You always run the same command.
+`/setup` detects whether it's landing in a fresh project or an existing codebase and does the right thing. First get the kit into the project, then run it.
 
-```
-1. Copy this folder's contents into your project root (or run python install.py)
-2. Open Claude Code in the project
-3. Run /setup
-```
+**1. Add the kit to your project:**
+
+- **New / empty project:** copy this folder's contents into your project root (or run `python install.py`).
+- **Existing project** (already has code, a `README.md`, maybe a `CLAUDE.md`): run `python install.py` from this kit folder, pointed at your project — or point Claude at this kit *and* your project and ask it to set things up. Either way it installs **only** `CLAUDE.md` + the `.claude/` folder, so **your project's `README.md` is never touched**, and it prompts to **merge / show diff / replace / skip** if a `CLAUDE.md` or `.claude/settings.json` already exists. Don't hand-copy the raw folder into an existing project — that would overwrite its README.
+
+**2. Open Claude Code in the project and run `/setup`.**
 
 **Existing project** — `/setup` runs its Existing-Project Scan (`setup/ONBOARD-SCAN.md`):
 - Checks for existing AI config (`.cursorrules`, old `CLAUDE.md`, etc.) and offers to merge
