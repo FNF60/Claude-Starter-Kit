@@ -1,0 +1,10 @@
+# Normalize line endings: store LF in the repo, check out LF everywhere.
+# Prevents Windows tools from committing CRLF/other endings that render badly on GitHub.
+* text=auto eol=lf
+
+# Be explicit for the file types in this kit
+*.md    text eol=lf
+*.py    text eol=lf
+*.sh    text eol=lf
+*.json  text eol=lf
+*.jsonc text eol=lf
