@@ -36,3 +36,37 @@ python3 -c "import json; json.load(open('.claude/settings.json'))"
 ```
 
 No output means valid. If it errors, fix the syntax before reopening Claude Code. (Edit `settings.json`, not `settings.jsonc` — the `.jsonc` file has comments and is intentionally not valid JSON.)
+
+## 6. Windows / PowerShell rules
+
+The profile ships **both** `Bash(...)` and `PowerShell(...)` rules so it works whichever shell Claude Code uses. Which one is active depends on the machine:
+
+- **Git for Windows installed** → Claude Code uses the **Bash tool** (Git Bash); the `Bash(...)` rules apply.
+- **No Git for Windows**, or you set `CLAUDE_CODE_USE_POWERSHELL_TOOL=1` **and** `defaultShell: "powershell"` → it uses the **PowerShell tool**; the `PowerShell(...)` rules apply.
+
+Since this kit expects Git for Windows, most installs default to Bash. Shipping both lists means you're covered either way — nothing to toggle. To confirm which tool is live, run `claude doctor` or read the startup banner (it names the active shell).
+
+Two behaviours of the `PowerShell(...)` matcher worth knowing:
+
+- **Aliases are matched automatically**, case-insensitively. `PowerShell(Get-ChildItem *)` also covers `gci`/`ls`/`dir`; `PowerShell(Remove-Item *)` covers `rm`/`del`/`ri`. So the `ask` rule on `Remove-Item` is the real backstop — the `-Recurse -Force` deny is only advisory (arg order defeats it), exactly like the Bash `rm -rf` denies.
+- **Pipelines are AST-parsed.** `|`, `;`, and (PS7+) `&&`/`||` split a line into subcommands, and **every** subcommand must be allowed or the whole line prompts. That's why the pipeline glue (`Where-Object`, `Select-Object`, `ForEach-Object`, `Sort-Object`, `Format-*`) is in the allow list.
+
+**Known Windows bug:** clicking *"approve & don't ask again"* on a PowerShell prompt currently fails to persist — you get re-prompted and `settings.json` fills with dead rules ([anthropics/claude-code#57013](https://github.com/anthropics/claude-code/issues/57013)). The workaround is what this kit already does: **pre-write the rules into `settings.json` by hand** rather than relying on the interactive approve-and-remember flow.
+
+## 7. Allowing specific download URLs
+
+Shell downloads (`curl`, `wget`, `Invoke-WebRequest`) are in the `ask` tier, so they prompt every time by default. Because of the persistence bug above, you can't reliably build a trusted-URL list by clicking "don't ask again" — so maintain it **by hand**: add one allow rule per URL you trust. Add the `Bash(...)` form, the `PowerShell(...)` form, or both, depending on your shell:
+
+```jsonc
+"allow": [
+  "Bash(curl https://raw.githubusercontent.com/your-org/*)",
+  "PowerShell(Invoke-WebRequest https://raw.githubusercontent.com/your-org/*)"
+]
+```
+
+Notes:
+
+- One `Invoke-WebRequest` rule also covers the `curl`/`wget`/`iwr` aliases in PowerShell — you don't need separate entries for those spellings.
+- Match the URL as a **prefix ending in `*`**. A plain `curl https://host/path` matches cleanly; flag-heavy forms like `curl -L https://...` shift the URL's position and may still prompt — that's intended (unusual invocations get eyeballed).
+- This governs **downloading files** in the shell. Claude's own page reads use the separate `WebFetch(domain:…)` allowlist in the same file.
+- Keep this list curated and small — every entry is a standing grant to reach that host without asking.

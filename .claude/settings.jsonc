@@ -90,7 +90,70 @@
       "WebFetch(domain:pypi.org)", "WebFetch(domain:npmjs.com)",
       "WebFetch(domain:developer.mozilla.org)", "WebFetch(domain:stackoverflow.com)",
       "WebFetch(domain:docs.python.org)", "WebFetch(domain:pkg.go.dev)",
-      "WebFetch(domain:docs.rs)", "WebFetch(domain:docs.n8n.io)"
+      "WebFetch(domain:docs.rs)", "WebFetch(domain:docs.n8n.io)",
+
+      // --- PowerShell tool (Windows) --- shipped ALONGSIDE the Bash rules so the
+      //     profile covers whichever shell is active. Which one is active depends on
+      //     the machine: with Git for Windows installed Claude Code uses the Bash tool
+      //     (Git Bash) and the Bash rules apply; without it — or with
+      //     CLAUDE_CODE_USE_POWERSHELL_TOOL=1 + defaultShell:"powershell" — it uses the
+      //     PowerShell tool and THESE rules apply. Two things the PowerShell matcher
+      //     does that bash doesn't: (1) a rule for a cmdlet also matches its ALIASES,
+      //     case-insensitively — "Get-ChildItem *" covers gci/ls/dir, "Remove-Item *"
+      //     covers rm/del/ri; (2) it AST-parses pipelines/;/&&/|| and every subcommand
+      //     must be allowed or the whole line prompts (that's why the pipeline glue —
+      //     Where/Select/ForEach/Sort/Format-* — is allowed below).
+
+      // Read-only / inspection cmdlets (aliases covered automatically):
+      "PowerShell(Get-ChildItem *)", "PowerShell(Get-Content *)", "PowerShell(Get-Item *)",
+      "PowerShell(Get-ItemProperty *)", "PowerShell(Get-Location)", "PowerShell(Get-Command *)",
+      "PowerShell(Get-Help *)", "PowerShell(Get-Member *)", "PowerShell(Test-Path *)",
+      "PowerShell(Resolve-Path *)", "PowerShell(Split-Path *)", "PowerShell(Join-Path *)",
+      "PowerShell(Get-Date)", "PowerShell(Measure-Object *)", "PowerShell(Compare-Object *)",
+      "PowerShell(Group-Object *)", "PowerShell(Select-Object *)", "PowerShell(Select-String *)",
+      "PowerShell(Where-Object *)", "PowerShell(ForEach-Object *)", "PowerShell(Sort-Object *)",
+      "PowerShell(Format-List *)", "PowerShell(Format-Table *)", "PowerShell(Out-String *)",
+      "PowerShell(ConvertFrom-Json *)", "PowerShell(ConvertTo-Json *)", "PowerShell(Write-Output *)",
+      "PowerShell(Write-Host *)", "PowerShell(Get-Process *)", "PowerShell(Get-Service *)",
+
+      // Dev tooling invoked from PowerShell — mirror of the Bash allow-list. These are
+      // external executables (git/npm/python/...), so the same command strings apply.
+      // (Secret Get-Content reads are blocked in deny below; deny is evaluated first.)
+      "PowerShell(git status *)", "PowerShell(git diff *)", "PowerShell(git log *)",
+      "PowerShell(git show *)", "PowerShell(git branch *)", "PowerShell(git remote *)",
+      "PowerShell(git stash list)", "PowerShell(git fetch *)", "PowerShell(git blame *)",
+      "PowerShell(git tag)", "PowerShell(git rev-parse *)", "PowerShell(git ls-files *)",
+      "PowerShell(git describe *)", "PowerShell(git config --get *)", "PowerShell(git config --list)",
+      "PowerShell(git add *)",
+      "PowerShell(npm install *)", "PowerShell(npm install)", "PowerShell(npm ci *)",
+      "PowerShell(npm run *)", "PowerShell(npm test *)", "PowerShell(npm test)",
+      "PowerShell(npm ls *)", "PowerShell(npm outdated *)", "PowerShell(npm exec *)",
+      "PowerShell(npx *)", "PowerShell(pnpm install *)", "PowerShell(pnpm add *)",
+      "PowerShell(pnpm run *)", "PowerShell(pnpm test *)", "PowerShell(pnpm build *)",
+      "PowerShell(pnpm exec *)", "PowerShell(pnpm dlx *)", "PowerShell(yarn install *)",
+      "PowerShell(yarn add *)", "PowerShell(yarn run *)", "PowerShell(yarn test *)",
+      "PowerShell(yarn build *)", "PowerShell(bun install *)", "PowerShell(bun add *)",
+      "PowerShell(bun run *)", "PowerShell(bun test *)", "PowerShell(bunx *)",
+      "PowerShell(pip install *)", "PowerShell(pip list *)", "PowerShell(pip show *)",
+      "PowerShell(pip freeze *)", "PowerShell(python *)", "PowerShell(python3 *)",
+      "PowerShell(py *)", "PowerShell(pytest *)", "PowerShell(pytest)", "PowerShell(ruff *)",
+      "PowerShell(black *)", "PowerShell(mypy *)", "PowerShell(flake8 *)", "PowerShell(isort *)",
+      "PowerShell(poetry install *)", "PowerShell(poetry add *)", "PowerShell(poetry run *)",
+      "PowerShell(uv *)", "PowerShell(uvicorn *)",
+      "PowerShell(cargo build *)", "PowerShell(cargo test *)", "PowerShell(cargo run *)",
+      "PowerShell(cargo check *)", "PowerShell(cargo clippy *)", "PowerShell(cargo fmt *)",
+      "PowerShell(go build *)", "PowerShell(go test *)", "PowerShell(go run *)",
+      "PowerShell(go vet *)", "PowerShell(go fmt *)", "PowerShell(go mod *)",
+      // NOTE: .\gradlew.bat / .\mvnw.cmd (Windows wrapper forms) are NOT listed — the
+      // forward-slash forms below work from PowerShell; the .bat/.cmd forms will prompt.
+      "PowerShell(mvn *)", "PowerShell(gradle *)", "PowerShell(./gradlew *)",
+      "PowerShell(./mvnw *)", "PowerShell(java -version)", "PowerShell(javac *)",
+      "PowerShell(node *)", "PowerShell(tsc *)", "PowerShell(eslint *)", "PowerShell(prettier *)",
+      "PowerShell(docker ps *)", "PowerShell(docker images *)", "PowerShell(docker logs *)",
+      "PowerShell(docker build *)", "PowerShell(docker inspect *)", "PowerShell(docker version)",
+      "PowerShell(docker info)", "PowerShell(docker compose build *)", "PowerShell(docker compose up *)",
+      "PowerShell(docker compose down *)", "PowerShell(docker compose logs *)",
+      "PowerShell(docker compose ps *)", "PowerShell(docker compose restart *)"
     ],
 
     // "ask" = always prompt, even though these are otherwise reasonable. Reversible-
@@ -107,7 +170,26 @@
       "Bash(docker run *)", "Bash(docker exec *)", "Bash(docker rm *)",
       "Bash(docker rmi *)", "Bash(docker system prune *)",
 
-      "Bash(npm publish *)", "Bash(cargo publish *)"
+      "Bash(npm publish *)", "Bash(cargo publish *)",
+
+      // --- PowerShell state-changing / network (mirror of the Bash ask tier) ---
+      // Remove-Item in ask catches rm/del/ri via alias matching — that's the real
+      // backstop, since the "-Recurse -Force" deny below is only advisory. curl and
+      // wget are ALIASES of Invoke-WebRequest in PowerShell, so listing it here also
+      // makes curl/wget/iwr prompt (see SETTINGS_NOTES.md for the per-URL allowlist).
+      "PowerShell(Remove-Item *)", "PowerShell(Move-Item *)", "PowerShell(Copy-Item *)",
+      "PowerShell(New-Item *)", "PowerShell(Set-Content *)", "PowerShell(Add-Content *)",
+      "PowerShell(Out-File *)", "PowerShell(Clear-Content *)", "PowerShell(Set-ItemProperty *)",
+      "PowerShell(Rename-Item *)", "PowerShell(Stop-Process *)", "PowerShell(Stop-Service *)",
+      "PowerShell(Start-Service *)", "PowerShell(Restart-Service *)", "PowerShell(Set-Service *)",
+      "PowerShell(Invoke-WebRequest *)", "PowerShell(Invoke-RestMethod *)",
+      "PowerShell(git commit *)", "PowerShell(git push *)", "PowerShell(git reset *)",
+      "PowerShell(git checkout *)", "PowerShell(git restore *)", "PowerShell(git rebase *)",
+      "PowerShell(git merge *)", "PowerShell(git clean *)", "PowerShell(git cherry-pick *)",
+      "PowerShell(git revert *)",
+      "PowerShell(docker run *)", "PowerShell(docker exec *)", "PowerShell(docker rm *)",
+      "PowerShell(docker rmi *)", "PowerShell(docker system prune *)",
+      "PowerShell(npm publish *)", "PowerShell(cargo publish *)"
     ],
 
     // "deny" = hard block, no prompt offered. Catastrophic / irreversible / exfil.
@@ -127,7 +209,19 @@
       "Read(**/.aws/**)", "Read(**/.config/gcloud/**)", "Read(**/*.pem)",
       "Read(**/*.key)", "Read(**/.npmrc)", "Read(**/.pypirc)", "Read(**/.netrc)",
       "Read(**/secrets/**)", "Read(**/.docker/config.json)", "Read(**/.kube/config)",
-      "Bash(cat *.env*)", "Bash(cat *.pem)", "Bash(cat *id_rsa*)", "Bash(cat *.aws/*)"
+      "Bash(cat *.env*)", "Bash(cat *.pem)", "Bash(cat *id_rsa*)", "Bash(cat *.aws/*)",
+
+      // --- PowerShell catastrophic / exfil / secret-reads ---
+      // Same caveat as the Bash denies: "Remove-Item * -Recurse -Force*" and the
+      // Get-Content secret reads are ADVISORY (arg order / glob limits), not a hard
+      // wall — real safety is the ask tier above + OS sandboxing. Invoke-Expression is
+      // denied unconditionally (the PS equivalent of curl|bash): a pipeline like
+      // "iwr url | iex" trips the deny on its Invoke-Expression subcommand.
+      "PowerShell(Format-Volume *)", "PowerShell(Clear-Disk *)", "PowerShell(Remove-Item Env:*)",
+      "PowerShell(Remove-Item * -Recurse -Force*)", "PowerShell(Invoke-Expression *)",
+      "PowerShell(Get-Content *.env*)", "PowerShell(Get-Content *.pem)",
+      "PowerShell(Get-Content *id_rsa*)", "PowerShell(Get-Content *id_ed25519*)",
+      "PowerShell(Get-Content *.aws/*)", "PowerShell(Get-Content *.ssh/*)"
     ]
   }
 }

@@ -27,7 +27,9 @@ You don't need to memorize commands. Just say what you're doing, and the right h
 
 ## About safety
 
-Claude asks before doing anything risky — deleting files, sending code to a shared location, and similar. You approve or decline each time. Routine, safe actions (reading files, running tests) happen without nagging you. If you ever want a hard lock on risky git commands, just ask (see above), and Claude will tell you precisely what it changed and how to undo it.
+This kit sets Claude up in a **sensible middle ground**, so you get help without either extreme. Out of the box it's more relaxed than Claude's cautious default — the everyday, harmless stuff (reading your files, running tests, building the project) just happens, so you're not stuck clicking "approve" every few seconds for basic things. But it's deliberately *not* the reckless "skip every safety check" mode either: anything risky — deleting files, rewriting your saved history, reaching outside your project folder, or sending code somewhere shared — still stops and asks you first, and a short list of truly dangerous commands is blocked outright. So Claude gets real room to work, but can't quietly delete or damage files elsewhere on your PC.
+
+You approve or decline each prompt as it comes up. And if you ever want an extra hard lock on risky git commands, just ask (see above) — Claude will set it up and tell you exactly what changed and how to undo it.
 
 ## When you're curious for more
 

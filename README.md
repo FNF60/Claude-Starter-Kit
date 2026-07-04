@@ -92,6 +92,10 @@ Then start building — describe a feature and run `/plan-interview` to turn it 
 
 The kit ships **no hooks**. Git safety comes from the `ask`/`deny` rules; if you want hard blocking of dangerous git commands, run the `/git-guardrails` skill, which installs a PreToolUse hook on demand and tells you exactly what it changed. See `.claude/SETTINGS_NOTES.md` for merge and hand-edit guidance.
 
+**Windows / PowerShell.** The profile ships parallel `PowerShell(...)` rules next to the `Bash(...)` ones, so it works whether Claude Code runs through Git Bash or the native PowerShell tool — no toggle needed. The PowerShell matcher also matches cmdlet *aliases* (`Remove-Item` catches `rm`/`del`) and requires every stage of a pipeline to be allowed. See `.claude/SETTINGS_NOTES.md` §6 for the details and a known Windows caveat.
+
+**Allowing specific download URLs.** `curl`/`wget`/`Invoke-WebRequest` prompt every time by default. To pre-approve a host you trust, add one allow rule per URL by hand — `Bash(curl https://host/path/*)` and/or `PowerShell(Invoke-WebRequest https://host/path/*)`. This is separate from the `WebFetch(domain:…)` list, which governs Claude's own page reads. Format and caveats are in `.claude/SETTINGS_NOTES.md` §7.
+
 ## Philosophy
 
 - **Learn before asking.** `/setup` reads the codebase first so questions are informed and few.
