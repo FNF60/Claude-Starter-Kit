@@ -1,14 +1,14 @@
 ---
 name: save-conversation
-description: "Save the current Claude Code session as a verbatim markdown transcript. Invocation: /save-conversation <slug>. Slug is required."
+description: "Save the current Claude Code session as a condensed markdown transcript (user prompts, final responses, AskUserQuestion exchanges — no tool calls/results or thinking). Invocation: /save-conversation <slug>. Slug is required."
 argument-hint: "<slug>"
 ---
 
 # Save Conversation — Export Session Transcript
 
-Saves the current Claude Code session as a verbatim markdown transcript.
+Saves the current Claude Code session as a condensed markdown transcript containing only the main turns: user prompts, the final assistant response of each turn, and AskUserQuestion exchanges.
 
-**Output path:** `Supplementary AI md files/Conversations/YYYY-MM-DD-HHMM-<slug>.md`
+**Output path:** `docs/Supplementary AI md files/Conversations/YYYY-MM-DD-HHMM-<slug>.md`
 
 Re-saving the same slug replaces the existing file (one file per slug at any time).
 
@@ -74,10 +74,10 @@ If the script exits non-zero, print its stderr and stop.
 ### 3. Report
 
 ```
-Saved:  Supplementary AI md files/Conversations/YYYY-MM-DD-HHMM-<slug>.md
+Saved:  docs/Supplementary AI md files/Conversations/YYYY-MM-DD-HHMM-<slug>.md
 Lines:  <N>
 
-To stage:  git add "Supplementary AI md files/Conversations/YYYY-MM-DD-HHMM-<slug>.md"
+To stage:  git add "docs/Supplementary AI md files/Conversations/YYYY-MM-DD-HHMM-<slug>.md"
 ```
 
 Do not run `git add`. Do not commit. Per project policy (stage-only), the user decides.
@@ -90,9 +90,10 @@ Do not run `git add`. Do not commit. Per project policy (stage-only), the user d
 - **Single session only.** The script targets the most-recently-modified .jsonl in the last hour. No bulk modes.
 - **Re-save replaces.** The script deletes any `*-<slug>.md` before writing the new file.
 - **No git ops.** Print the `git add` suggestion; never execute it.
-- **Output dir must exist.** The script errors if `Supplementary AI md files/Conversations/` is missing — don't create it; surface the error to the user.
-- **Transcript file format.** Each turn renders as:
-  - `## User` — verbatim user text
-  - `## Assistant` — verbatim assistant text; tool calls as fenced `` ```tool_use:<name> `` blocks
-  - `### Tool result: <name>` — verbatim result content
-  - `<details><summary>System reminder: …</summary>…</details>` — hook injection notices
+- **Output dir must exist.** The script errors if `docs/Supplementary AI md files/Conversations/` is missing — don't create it; surface the error to the user.
+- **Transcript file format.** Main turns only:
+  - `## User` — verbatim user prompt (slash-command invocations render compactly as `` `/name args` ``)
+  - `## User (tool rejection)` — the reason the user typed when rejecting a tool call
+  - `## Question (AskUserQuestion)` — per question: `**Q:**` text, `_Options:_` labels, `**A:**` chosen answer
+  - `## Assistant` — the turn's **final** response only (text after the turn's last tool call)
+  - Dropped entirely: tool calls & results, thinking, hook/system reminders, command stdout, interruption boilerplate, mid-turn narration
