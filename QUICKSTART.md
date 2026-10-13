@@ -21,7 +21,7 @@ You don't need to memorize commands. Just say what you're doing, and the right h
 - **Starting something new?** Say *"let's plan this"* or *"interview me about this."* Claude asks you one sharp question at a time and turns your idea into a clear, step-by-step plan before any code is written.
 - **Wrote something and want it checked?** Say *"review my changes."*
 - **Something's broken?** Say *"help me figure out this bug."*
-- **Done for the day?** Say *"wrap up"* — Claude tidies up, saves your progress, and notes where to pick up next time.
+- **Done for the day, or the chat is getting long?** Say *"write the handoff"* — Claude writes a short note of exactly where things stand so the next chat can pick up without re-explaining. Starting the next chat from that note works better than letting one chat run forever.
 - **Want an extra safety net on your code history?** Say *"block the dangerous git commands."* Claude will set it up and tell you exactly what changed.
 - **Want a written record of a chat?** Say *"save this conversation."*
 

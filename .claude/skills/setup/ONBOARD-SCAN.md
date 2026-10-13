@@ -150,7 +150,8 @@ Auto-add these to a Don't Touch list (the user can prune):
 |------|---------------|
 | `CODEOWNERS` | Who reviews what — record as module ownership |
 | `CONTRIBUTING.md` | PR rules, commit format, branch naming |
-| `.github/PULL_REQUEST_TEMPLATE.md` | Required PR sections (mention in /wrap) |
+| `.github/PULL_REQUEST_TEMPLATE.md` | Required PR sections (record in Commit & Workflow Policy) |
+| `docs/handoff/` | An earlier kit's handoffs — read the live one; it is the state of the current ticket |
 | `CHANGELOG.md` | Whether to update on every change |
 | `.github/ISSUE_TEMPLATE/` | How bugs/features are reported |
 
@@ -178,7 +179,7 @@ Also extract the **commit message convention** the project actually uses. Exampl
 - `Component: description` -> component-prefixed
 - prose -> no fixed convention
 
-Record this so `/wrap` follows it instead of imposing Conventional Commits.
+Record this so a proposed commit message follows it instead of imposing Conventional Commits.
 
 ---
 
@@ -196,8 +197,8 @@ Q1: "Who's working on this project?" (header: "Team")
   - "Open source — external contributors"
 
 Q2: "What's your commit policy?" (header: "Commits")
-  - "Auto-commit on /wrap (current kit default)"
-  - "Stage only — I review and commit manually"
+  - "Stage only — agents stage and propose a message, I commit (kit default)"
+  - "Auto-commit — agents commit when a step is done"
   - "Draft PR — open a PR but never push to main"
   - "Never commit — only edit working tree"
 
@@ -240,6 +241,10 @@ Write `CLAUDE.md` at the repo root with sections populated from the scan. Every 
 Use the kit's `CLAUDE.md` template structure — it's designed to map to this output.
 
 For each section, if the data is missing, **leave a one-line prompt explaining what's needed and why** — never a generic `[FILL]`.
+
+**Sections that are process, not scan output — always present, never dropped:** "Area conventions" (start with one pin per detected risk surface, each naming a `.claude/rules/<area>.md` to be written when the area's rules exceed a few lines), "Commit & Workflow Policy" with the **Handoffs** two-case bullet and the "prompt the owner for the commit message" sentence, the clarification instruction as the first "Output Preferences" bullet, and "Compact Instructions" verbatim from the template. Keep the whole file **under ~200 lines**: when a discovered section would push it over, write the detail into a rules file with `paths:` frontmatter and leave a one-line pin.
+
+**`--refresh` on a CLAUDE.md written by an earlier kit:** diff its headings against the template. Add every missing process section (above) in template wording; never rewrite a `[declared]` section. If a section runs long (an area's bullets past ~10 lines), propose — do not perform — the move into `.claude/rules/<area>.md`, listing the bullets and the `paths:` globs; the owner confirms. Scaffold `docs/handoff/archive/` and `.claude/rules/` if absent. Report any `/wrap` references left in the file and replace them with `/handoff`.
 
 ---
 

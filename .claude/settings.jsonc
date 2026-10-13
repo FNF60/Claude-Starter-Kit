@@ -4,6 +4,14 @@
   // Trailing "*" is optional, so "Bash(git status *)" also matches bare "git status".
   // Shell-operator aware: "Bash(cat *)" will NOT match "cat x && rm y" — chained
   // commands fall through to a prompt. That's why plain allow rules stay safe.
+
+  // Context: auto-compact only when the conversation reaches ~500K tokens (unit: tokens; docs:
+  // code.claude.com/docs/en/model-config, "Set the auto-compact window"). The kit's workflow rotates
+  // sessions by a written handoff at ~40% of the window (WORKFLOW.md §4-§5), so this sits ABOVE
+  // that point: it is the safety net for a session that overran, never the normal path. Sized for
+  // 1M-context models; Claude Code caps it at the model's window, so on a 200K model set ~100000.
+  "autoCompactWindow": 500000,
+
   "permissions": {
 
     // Anything not matched by allow/ask/deny falls here -> prompts you. This is

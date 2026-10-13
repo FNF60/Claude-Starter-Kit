@@ -91,8 +91,8 @@ Q2: "What testing approach?" (header: "Tests")
   - "No tests yet — help me set them up"
 
 Q3: "Commit policy?" (header: "Commits")
-  - "Auto-commit on /wrap"
-  - "Stage only — I review and commit manually"
+  - "Stage only — agents stage and propose a message, I commit (kit default)"
+  - "Auto-commit — agents commit when a step is done"
   - "Draft PR — open a PR but never push to main"
   - "Never commit — only edit working tree"
 
@@ -118,14 +118,14 @@ AskUserQuestion:
 
 Q1: "Which skills do you expect to use most?" (header: "Skills", multiSelect: true)
   - "/plan-interview — get interviewed hard to turn a rough idea into a step-by-step plan"
-  - "/wrap — autonomous session close (review, commit, memory)"
+  - "/handoff — the session-close step: a note the next session starts from (two-case rule, WORKFLOW.md §4)"
   - "/tdd — red → green test-driven implementation"
   - "/code-review — two-axis (standards + spec) review of a diff"
   - "/diagnosing-bugs — structured loop for hard bugs and regressions"
   - "/codebase-design & /domain-modeling — architecture + domain language"
   - "/improve-codebase-architecture — scan for deepening opportunities"
-  - "/handoff & /loop-me — session handoff and workflow specs"
-  - "/save-conversation — export a verbatim session transcript"
+  - "/loop-me — stateful interview whose output is workflow specs"
+  - "/save-conversation — export a condensed session transcript"
   - "All of them (recommended)"
 
 Q2: "Should I auto-trigger skills or wait for you?" (header: "Auto-trigger")
@@ -148,12 +148,13 @@ Q4: "Session memory — how much should I remember?" (header: "Memory")
 
 After questionnaires, prep the repo:
 
-1. **Fill CLAUDE.md** with selected stack, commit policy, communication style.
+1. **Fill CLAUDE.md** with selected stack, commit policy, communication style. The process sections stay in template wording regardless of answers: "Area conventions" (empty list with the one-line rule), "Commit & Workflow Policy" with the **Handoffs** two-case bullet and "prompt the owner for the commit message" under stage-only, the clarification instruction as the first "Output Preferences" bullet, and "Compact Instructions". Keep the file under ~200 lines.
 2. **Pre-populate the project commands** in CLAUDE.md "Quick Start" / "Existing Tooling" based on the chosen stack (e.g., `npm test` for Node, `pytest` for Python). Mark them as defaults the user should adjust once they pick concrete tools.
-3. **Configure permissions** — add stack-appropriate `Bash(...)` allow entries.
+3. **Configure permissions** — add stack-appropriate `Bash(...)` / `PowerShell(...)` allow entries. Leave `autoCompactWindow` as shipped unless the user works on a model with a window under 1M (then ~half that window; `.claude/SETTINGS_NOTES.md` §8).
 4. **Set default branch** in CLAUDE.md to `main` (greenfield default; user can change).
+5. **Scaffold the workflow files** if `install.py` did not: `.claude/rules/.gitkeep`, `docs/handoff/archive/.gitkeep`; confirm `WORKFLOW.md` exists and fill its `[declared]` lines (source-of-truth chain, commit policy, branching) from the answers above.
 
-5. **Report:**
+6. **Report:**
 
 ```
 === Setup Complete (greenfield) ===
@@ -163,8 +164,10 @@ After questionnaires, prep the repo:
   Communication: [chosen]
   Skills favored: [list]
   Risk surfaces seeded: [from Q1]
+  Workflow:      WORKFLOW.md filled; docs/handoff/ and .claude/rules/ scaffolded
   Next: Describe your first feature — run /plan-interview to turn it into a
         step-by-step plan, then build it, using /tdd if you chose test-first.
+        Close the session with /handoff when a next step is clear (WORKFLOW.md §4).
 ===
 ```
 
@@ -188,4 +191,6 @@ Configure selected extras. For "Hard git guardrails", run the `git-guardrails` s
 
 - **Route first**: existing → the Existing-Project Scan, fresh → questionnaire. Never run greenfield questions against an existing codebase — that's what the scan exists to prevent.
 - **Never skip questionnaires** in the greenfield track — the whole point is guided setup.
-- **Save answers to memory** so future sessions know the pr
+- **Save answers to memory** so future sessions know the project type, the owner's role and the chosen policies without asking again.
+- **Process sections are not optional.** Area conventions, the Handoffs rule, the clarification instruction and Compact Instructions are in every CLAUDE.md this skill writes or refreshes; `--refresh` adds them to an older file without touching `[declared]` text (details in ONBOARD-SCAN.md Phase 4).
+- **Ask, don't assume.** Whenever an answer could go two ways and the choice changes the setup, ask with the alternatives explained in simple terms — the same standing instruction the CLAUDE.md template carries.

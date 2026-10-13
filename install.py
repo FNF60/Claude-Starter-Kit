@@ -27,14 +27,20 @@ from pathlib import Path
 # Files the kit ships. Paths are relative to the kit's own directory.
 KIT_FILES = [
     "CLAUDE.md",
+    "WORKFLOW.md",
     ".claude/settings.json",
     ".claude/settings.jsonc",
     ".claude/SETTINGS_NOTES.md",
     ".claude/bin/save_conversation.py",
+    # Scaffold markers: an empty rules dir (every rule file must carry `paths:`)
+    # and the handoff archive. .gitkeep so git tracks the empty directories.
+    ".claude/rules/.gitkeep",
+    "docs/handoff/archive/.gitkeep",
     # Core workflow skills
     ".claude/skills/setup/skill.md",
     ".claude/skills/setup/ONBOARD-SCAN.md",
-    ".claude/skills/wrap/skill.md",
+    ".claude/skills/handoff/SKILL.md",
+    ".claude/skills/handoff/template.md",
     ".claude/skills/save-conversation/SKILL.md",
     # Engineering skill set
     ".claude/skills/plan-interview/SKILL.md",
@@ -52,11 +58,16 @@ KIT_FILES = [
     ".claude/skills/tdd/mocking.md",
     ".claude/skills/tdd/tests.md",
     ".claude/skills/code-review/SKILL.md",
-    ".claude/skills/handoff/SKILL.md",
     ".claude/skills/loop-me/SKILL.md",
     ".claude/skills/obsidian-vault/SKILL.md",
     ".claude/skills/git-guardrails/SKILL.md",
     ".claude/skills/git-guardrails/scripts/block-dangerous-git.sh",
+]
+
+# Files earlier kit versions shipped and this one no longer does. Never deleted
+# by the installer — only reported, so the user removes them knowingly.
+RETIRED_KIT_FILES = [
+    ".claude/skills/wrap/skill.md",  # removed 2026-10-07: /handoff is the one session-close step
 ]
 
 # Other AI tooling configs we want to surface — not to overwrite, just to mention.
@@ -296,6 +307,14 @@ def main():
             print("Aborted.")
             sys.exit(0)
 
+    # An older kit already here? Say so: this run is then an update (see WORKFLOW.md §12).
+    prior_kit = (args.target / "CLAUDE.md").exists() and (args.target / ".claude" / "skills").exists()
+    if prior_kit:
+        print("\nAn existing CLAUDE.md and .claude/skills/ were found — treating this as an UPDATE of an")
+        print("earlier kit install. New files are created; changed files prompt below. Your README is never touched.")
+
+    retired_present = [p for p in RETIRED_KIT_FILES if (args.target / p).exists()]
+
     summary = {'installed': 0, 'merged': 0, 'skipped': 0, 'aborted': 0}
     for rel in KIT_FILES:
         src = root / rel
@@ -314,9 +333,22 @@ def main():
     for k, v in summary.items():
         print(f"  {k}: {v}")
 
+    if retired_present:
+        print("\nRetired kit files found (not removed — delete them yourself if nothing else uses them):")
+        for p in retired_present:
+            print(f"  - {p}")
+        print("  /wrap was retired: /handoff is the one session-close step (WORKFLOW.md §4).")
+
     print("\nNext step:")
-    print("  Run /setup in Claude Code — it detects whether this is a fresh start or an existing")
-    print("  codebase (reading any existing AI config and merging as needed).")
+    if prior_kit:
+        print("  Run /setup --refresh in Claude Code — it adds the CLAUDE.md sections this kit version")
+        print("  introduced (Area conventions, Compact Instructions, the Handoffs rule, the clarification")
+        print("  instruction) without touching your declared text, and tells you which long area bullets")
+        print("  to move into .claude/rules/<area>.md.")
+    else:
+        print("  Run /setup in Claude Code — it detects whether this is a fresh start or an existing")
+        print("  codebase (reading any existing AI config and merging as needed).")
+    print("  Then read WORKFLOW.md once: the session lifecycle and the two-case handoff rule live there.")
 
     print()
 

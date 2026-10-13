@@ -70,3 +70,11 @@ Notes:
 - Match the URL as a **prefix ending in `*`**. A plain `curl https://host/path` matches cleanly; flag-heavy forms like `curl -L https://...` shift the URL's position and may still prompt — that's intended (unusual invocations get eyeballed).
 - This governs **downloading files** in the shell. Claude's own page reads use the separate `WebFetch(domain:…)` allowlist in the same file.
 - Keep this list curated and small — every entry is a standing grant to reach that host without asking.
+
+## 8. `autoCompactWindow` — compaction as a fallback, not the workflow
+
+The profile sets `"autoCompactWindow": 500000` (a token count). The kit's way of working rotates sessions by a written handoff at about **40 % of the model's window** (`WORKFLOW.md` §4–§5); auto-compaction is the safety net for a session that overran, so the window sits *above* the rotation point, not below it.
+
+- Sized for **1M-context models** (≈400K rotation, 500K compaction). Claude Code caps the value at the model's own window, so on a 200K-context model this setting means "compact at the limit" — set it to about half that window (`100000`) if you want the same safety net there.
+- `/autocompact <n>` saves a per-model value in your *user* settings and takes precedence over this project key; `CLAUDE_CODE_AUTO_COMPACT_WINDOW` overrides everything.
+- What survives compaction is the project-root `CLAUDE.md` (re-read from disk) and rules files *without* `paths:`. Path-scoped rules and anything the session read are summarized away — which is why the handoff, not the summary, carries ticket state.
