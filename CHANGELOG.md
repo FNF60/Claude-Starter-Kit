@@ -2,6 +2,20 @@
 
 The kit's own decision record: what changed, why, and the options not taken. Dated entries, newest first. A project that installs the kit keeps its own decisions in its plan registries, ADRs or handoffs — not here.
 
+## 2026-10-27 — Dispatch mode
+
+Came from the first project running on the kit: after a ticket closed, the owner asked how the jump to the next session could be automated, keeping only decisions and commits for themselves. Decisions (owner, 2026-10-27), each with the alternatives considered:
+
+- **Dispatch mode added beside manual mode**, not instead of it: "we want both workflows to be possible … the user [is] presented with the question of (or decide[s] by prompting) that he/she wants to either do manual ticket-to-ticket sessions like now, or use the dispatch for more automation." *Not taken:* dispatch replacing manual sessions.
+- **Shape: one dispatcher session + a fresh subagent per ticket.** `/next-ticket` (new skill) routes; `.claude/agents/ticket-agent.md` (new, the kit's first agent definition) plans without writing, then builds, verifies, stages and writes the case-2 handoff. Every ticket still gets a clean context; the dispatcher keeps only reports, so it lasts many tickets. *Not taken:* a shell loop over headless `claude -p` (no way to answer questions or approve plans, which breaks plan-before-build); one long session doing ticket after ticket (context fills after two or three tickets and quality drops).
+- **Questions travel through the dispatcher.** A subagent cannot talk to the owner, so the agent stops at the plan and returns its questions with every alternative explained; the dispatcher asks with the explanations inside the options and writes each ratification to auto-memory the moment it is given.
+- **`/code-review` runs in the dispatcher**, never in the ticket-agent: the builder never reviews itself, and nested subagents are not relied on.
+- **Next-ticket trigger: the owner replies "next"** after committing; the dispatcher checks `git log` / `git status` before moving on. *Not taken:* a background watcher that starts the next ticket on the commit (starts work before the owner decides to stop; one more moving part).
+- **Mode selection in three places:** a closing question in `/plan-interview`, a `Mode: manual | dispatch` line in the handoff template (a session finding no mode asks), and switching by asking at any time. *Not taken:* a one-time choice in `/setup` (the mode belongs to a run of work, not to the kit's configuration).
+- **Sequential only.** The dispatcher runs one ticket at a time; parallel lanes stay manual sessions in worktrees, because stage-only commits and schema migrations are serialization points.
+- Touched: `WORKFLOW.md` (§3, new §4.1, §5, §8, §11), the `CLAUDE.md` template (Handoffs bullet, Automation), `handoff/SKILL.md` and `template.md` (`Mode:`), `plan-interview/SKILL.md` (closing question), `setup/skill.md`, `install.py` (two new files), `README.md`, `QUICKSTART.md`, `docs/workflow-overview.html` (new section 3).
+- **Not verified in the kit:** an end-to-end dispatch run (agent definitions load at session start; the first real run is the source project's next ticket), and the overview page's new diagram in a browser.
+
 ## 2026-10-07 — The workflow port
 
 Ported the way of working refined over ~50 agent sessions on one production project back into the kit, so it applies to other projects, greenfield and legacy. Decisions (owner, 2026-10-07), each with the alternatives considered:

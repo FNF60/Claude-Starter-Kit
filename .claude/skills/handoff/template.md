@@ -8,6 +8,7 @@ The shape of every handoff. Keep the section order; drop a section only when it 
 
 **Date:** <YYYY-MM-DD> · **Repo:** `<remote>` · **Branch:** `<branch>` · **Version:** <from the project's version file, if any>
 **Issue:** <#id and title, read off the tracker this session — or "not read: look it up before writing a `Closes` line; never infer it">
+**Mode:** <manual | dispatch> — manual: the next session works this ticket itself; dispatch: the next session runs `/next-ticket` (`WORKFLOW.md` §4.1). The owner can switch at any time.
 
 ## State
 
@@ -58,7 +59,7 @@ The shape of every handoff. Keep the section order; drop a section only when it 
 
 ### Rules that carry
 
-<Short bullets. One ticket per session; the commit policy; prompt the owner for the commit message; anything ticket-specific.>
+<Short bullets. One ticket per session (manual) or per ticket-agent (dispatch); the commit policy; prompt the owner for the commit message; anything ticket-specific.>
 
 ### Suggested skills
 

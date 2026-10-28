@@ -95,13 +95,13 @@
 <div class="wrap">
   <div class="bar">
     <span class="brand">~/claude-workflow</span>
-    <nav class="toc"><a href="#install">01_install.md</a><a href="#session">02_session.md</a><a href="#context">03_context.md</a></nav>
+    <nav class="toc"><a href="#install">01_install.md</a><a href="#session">02_session.md</a><a href="#modes">03_modes.md</a><a href="#context">04_context.md</a></nav>
     <div class="opts"><button id="width" class="theme" type="button" aria-label="Cycle page width"></button><button id="theme" class="theme" type="button" aria-label="Toggle colour theme"></button></div>
   </div>
   <header>
     <div class="eyebrow">// Claude Code Starter Kit · WORKFLOW.md, drawn</div>
     <h1>How a project runs, session by session<span class="cursor" aria-hidden="true"></span></h1>
-    <p class="lead">Three pictures of the way of working the kit installs: how the kit gets into a project and stays current, what one session does from open to close, and where every kind of context lives. The text of record is <code>WORKFLOW.md</code>; this page is the version you can read on a phone.</p>
+    <p class="lead">Four pictures of the way of working the kit installs: how the kit gets into a project and stays current, what one session does from open to close, how a run of tickets can flow without a new session each, and where every kind of context lives. The text of record is <code>WORKFLOW.md</code>; this page is the version you can read on a phone.</p>
   </header>
 
   <details class="sec" id="install" open>
@@ -138,7 +138,7 @@ flowchart TD
 <pre class="mermaid">
 flowchart TD
     A([Open the session]) --> B{Live handoff in docs/handoff/?}
-    B -- yes --> C[Read the handoff]
+    B -- yes --> C[Read the handoff&lt;br/&gt;Mode: dispatch → /next-ticket]
     B -- no --> D[Start from the plan:&lt;br/&gt;next unblocked ticket]
     C --> E[Distrust clause:&lt;br/&gt;git status · git log -1 · run the tests]
     D --> E
@@ -177,8 +177,44 @@ flowchart TD
     </div>
   </details>
 
+  <details class="sec" id="modes" open>
+    <summary><span class="chev"></span><span class="num">3</span><h2>Two modes: manual and dispatch</h2><span class="ref">WORKFLOW.md §4.1</span></summary>
+    <p>The lifecycle above runs in one of two modes, and the owner picks: at the close of <code>/plan-interview</code>, in every handoff's <code>Mode:</code> line, or just by asking. In dispatch mode one session hands each ticket to a fresh agent, so every ticket still starts clean, and the owner answers, approves and commits without opening a new session per ticket.</p>
+    <div class="band">
+<pre class="mermaid">
+flowchart TD
+    A([Dispatcher session: /next-ticket]) --> B[Read the live handoff:&lt;br/&gt;next ticket]
+    B --> C{Deps met, not blocked&lt;br/&gt;on the owner, git clean?}
+    C -- no --> X([Stop and tell the owner why])
+    C -- yes --> D[Start a fresh ticket-agent&lt;br/&gt;with the handoff as its brief]
+    D --> E[Phase 1: plan, no writes.&lt;br/&gt;Returns plan + questions]
+    E --> F[Dispatcher asks the owner.&lt;br/&gt;Ratifications written NOW]
+    F --> G[Phase 2: build and verify]
+    G --> H{Risk surface touched?}
+    H -- yes --> I[Dispatcher runs /code-review.&lt;br/&gt;Agent fixes the findings]
+    I --> J
+    H -- no --> J[Agent stages, writes the next&lt;br/&gt;handoff, proposes the message]
+    J --> K[Owner commits and pushes,&lt;br/&gt;replies next]
+    K --> L[Dispatcher checks git:&lt;br/&gt;new commit, nothing staged]
+    L --> B
+    classDef term stroke-width:1px
+    classDef dec stroke-width:1px
+    classDef warn stroke-width:1px
+    class A term
+    class C,H dec
+    class X warn
+    linkStyle default interpolate step
+</pre>
+    </div>
+    <div class="cases">
+      <div class="case"><h3><span class="tag">manual</span> one session per ticket</h3><p>The owner opens each session from the live handoff, exactly as in the lifecycle above. Best for exploratory work or a ticket that needs the owner in the loop throughout.</p></div>
+      <div class="case"><h3><span class="tag">dispatch</span> one session, an agent per ticket</h3><p><code>/next-ticket</code> relays each agent's plan and questions, runs <code>/code-review</code> on risk surfaces, and waits for the owner's commit and "next". Best for a run of well-specified tickets.</p></div>
+      <div class="case none"><h3><span class="tag">stop</span> dispatch pauses</h3><p>On "stop", at a milestone, when the next ticket is blocked on the owner, after two agent failures, or at the rotation point; the handoff's <code>Mode:</code> line resumes it in a new session.</p></div>
+    </div>
+  </details>
+
   <details class="sec" id="context" open>
-    <summary><span class="chev"></span><span class="num">3</span><h2>The context stack</h2><span class="ref">WORKFLOW.md §5–§6</span></summary>
+    <summary><span class="chev"></span><span class="num">4</span><h2>The context stack</h2><span class="ref">WORKFLOW.md §5–§6</span></summary>
     <p>Context is kept in layers, each with one job and one home. The always-loaded file stays small; detail loads when a matching file is opened; ticket state travels in the handoff; durable facts live outside the repo; the lossy path, compaction, is last and only fires if a session overruns.</p>
     <div class="band">
 <pre class="mermaid">

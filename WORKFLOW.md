@@ -41,13 +41,13 @@ The ticket line is the durable record. The handoff that closed the ticket is arc
 
 ## 3. The day-to-day loop
 
-1. Pick the next unblocked ticket from the board (deps met = unblocked). **One ticket per session.**
+1. Pick the next unblocked ticket from the board (deps met = unblocked). **One ticket per session** (manual mode) **or per `ticket-agent`** (dispatch mode, §4.1).
 2. Move its issue to *In progress*. Read the ticket's **Spec pointer** before writing code.
 3. Read the area's rules file (`.claude/rules/<area>.md`, §6) in full before changing anything in that area.
 4. Build. Definition of done: the Quality Bar in `CLAUDE.md` (tests, lint, typecheck green; no debug artifacts; project-specific gates).
 5. **Risk-surface changes (the list in `CLAUDE.md`) get `/code-review` before anything is staged for push.** This review is the quality gate that a pull request would otherwise provide.
 6. Stage. The commit is the human's (§7). Reference the issue in the message when one exists.
-7. Close the session by the two-case rule (§4).
+7. Close the session by the two-case rule (§4). In dispatch mode the `ticket-agent` writes the handoff and the dispatcher moves to the next ticket once the owner has committed (§4.1).
 
 ## 4. The session lifecycle
 
@@ -56,7 +56,7 @@ A session is bounded: it opens from a handoff, verifies before it trusts, record
 ```mermaid
 flowchart TD
     A([Open the session]) --> B{Live handoff in docs/handoff/?}
-    B -- yes --> C[Read the handoff]
+    B -- yes --> C[Read the handoff<br/>Mode: dispatch → /next-ticket, §4.1]
     B -- no --> D[Start from the plan:<br/>next unblocked ticket]
     C --> E[Distrust clause:<br/>git status · git log -1 · run the test suite]
     D --> E
@@ -91,6 +91,45 @@ A finished topic with no successor writes **no handoff**: archive the one the se
 **Mid-ticket ratifications are written the moment they happen** — into the handoff draft or auto-memory — never held for session end. Standing rules are safe in `CLAUDE.md` (re-read every session); ad-hoc decisions are not.
 
 **Shape and skill.** `/handoff` writes the file from `.claude/skills/handoff/template.md` (the template of record; never model a handoff on the previous one). The template's fixed parts: a verification record built only from commands run *this* session, a mandatory "Dead ends and refusals" section, the distrust clause at the top of "Next session", and the clarification line under it. `docs/handoff/` holds only live handoffs; consumed ones move to `docs/handoff/archive/` with `git mv` and live references are repointed. Archived files are history: never rewritten.
+
+### 4.1 Two modes: manual and dispatch
+
+The lifecycle above runs in one of two modes. Both keep the rules that matter: one ticket per fresh context, plan before build, decisions written when they happen, stage-only commits by the owner.
+
+- **Manual** — one session per ticket, exactly as above. The owner opens each new session from the live handoff.
+- **Dispatch** — one long-lived session runs `/next-ticket` and acts as a **dispatcher**: it hands each ticket to a fresh `ticket-agent` (`.claude/agents/ticket-agent.md`), relays the agent's plan and questions to the owner, and moves to the next ticket when the owner has committed and replied "next". The owner never opens a session per ticket.
+
+```mermaid
+flowchart TD
+    A([Dispatcher session: /next-ticket]) --> B[Read the live handoff:<br/>next ticket]
+    B --> C{Deps met, not blocked<br/>on the owner, git clean?}
+    C -- no --> X([Stop and tell the owner why])
+    C -- yes --> D[Start a fresh ticket-agent<br/>with the handoff as its brief]
+    D --> E[Phase 1: plan, no writes.<br/>Returns plan + questions]
+    E --> F[Dispatcher asks the owner.<br/>Ratifications written NOW]
+    F --> G[Phase 2: build and verify]
+    G --> H{Risk surface touched?}
+    H -- yes --> I[Dispatcher runs /code-review.<br/>Agent fixes the findings]
+    I --> J
+    H -- no --> J[Agent stages, writes the next<br/>handoff, proposes the message]
+    J --> K[Owner commits and pushes,<br/>replies next]
+    K --> L[Dispatcher checks git:<br/>new commit, nothing staged]
+    L --> B
+```
+
+**Choosing the mode.** The owner picks, and can switch at any time:
+
+- at the close of `/plan-interview`, which asks how the plan will run;
+- through the handoff's `Mode:` line (`manual | dispatch`), which every handoff carries; a session that opens from a `Mode: dispatch` handoff runs `/next-ticket`, and one that finds no mode asks;
+- by asking — "switch to dispatch" runs `/next-ticket`; "go manual" makes the dispatcher set the live handoff to `Mode: manual` and stop.
+
+**Who does what in dispatch mode.** The `ticket-agent` reads, plans, builds, verifies, stages and writes the case-2 handoff; it cannot talk to the owner, so its questions come back in its report with each alternative explained. The dispatcher never reads code or edits project files: it relays questions (`AskUserQuestion`, explanations inside the options), writes ratifications to auto-memory the moment they are made, runs `/code-review` on risk-surface tickets so the builder never reviews itself, and checks `git status` / `git log` and the tests before handing over. Agent reports are claims; git and the test run are the record.
+
+**Where dispatch stops.** The owner says stop; a milestone closes (ask before the next one); the next ticket is blocked on the owner or does not exist; an agent fails twice on one ticket (offer manual mode with the same handoff); or the dispatcher's own context reaches the rotation point (§5) — the owner opens a new session, and the live handoff's `Mode: dispatch` resumes the loop. The dispatcher writes no handoff of its own.
+
+**Models.** The `ticket-agent` inherits the dispatcher's model unless its frontmatter sets `model:`; the tiering in §9 applies to it like to any session.
+
+**When to pick which.** Dispatch suits a run of well-specified tickets with the owner available to answer and commit. Manual suits exploratory work, tickets that need the owner in the loop throughout, or a first ticket in an unfamiliar area.
 
 ## 5. The context stack — what lives where
 
@@ -141,7 +180,7 @@ flowchart LR
 **Context-window discipline inside a session (target: never exceed ~40–60 % fill):**
 - Spawn subagents for anything bulky — spec reading, broad code searches, fixture generation — and keep only conclusions in the main context.
 - Read large documents by offset from an index, never whole-file.
-- Prefer many short single-ticket sessions over one long multi-ticket session.
+- Prefer many short single-ticket sessions — or dispatch mode (§4.1), where each ticket gets a fresh agent — over one long multi-ticket session.
 
 **Evidence** (details and sources in the project this template came from: `docs/reference/2026-10-06-context-compaction-vs-handoff.md`): structured state beats prose summaries; verbatim beats paraphrase; standing constraints must live outside the lossy path; the new session re-reads git and tests before trusting; failure traces and completion records prevent the two costliest post-compaction behaviours — redoing finished work and retrying a refused action.
 
@@ -184,7 +223,7 @@ The kit's default and the shape this template was refined under is **stage-only*
 
 Tickets are not strictly sequential; the `Dep:` fields define lanes. Rules for concurrent agent sessions:
 
-- **One ticket per session.** Never two agents on the same ticket.
+- **One ticket per session or `ticket-agent`.** Never two agents on the same ticket. The dispatcher (§4.1) runs tickets one at a time; parallel lanes are manual sessions in worktrees.
 - Parallel sessions that *write files* use separate git worktrees.
 - Work lands in dependency order; a later lane rebases onto the earlier lane's pushed work, never the reverse.
 - **Schema migrations (or any other serialization point) are never written in two sessions at once.**
@@ -217,6 +256,7 @@ Default to turn-based work with verification skills (`/tdd`, `/code-review`). Us
 | Test-first implementation | `/tdd` |
 | Any risk-surface change, before push | `/code-review` |
 | Session close (two-case rule) | `/handoff` |
+| Run tickets back to back through fresh agents (dispatch mode, §4.1) | `/next-ticket` |
 | Hard bug | `/diagnosing-bugs` |
 | New module design | `/codebase-design` |
 | Terms getting fuzzy; a hard-to-reverse decision | `/domain-modeling` |

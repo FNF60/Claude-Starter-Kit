@@ -42,6 +42,9 @@ KIT_FILES = [
     ".claude/skills/handoff/SKILL.md",
     ".claude/skills/handoff/template.md",
     ".claude/skills/save-conversation/SKILL.md",
+    # Dispatch mode (WORKFLOW.md §4.1): the dispatcher skill and the agent it starts per ticket
+    ".claude/skills/next-ticket/SKILL.md",
+    ".claude/agents/ticket-agent.md",
     # Engineering skill set
     ".claude/skills/plan-interview/SKILL.md",
     ".claude/skills/codebase-design/SKILL.md",

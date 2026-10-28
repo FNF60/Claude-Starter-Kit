@@ -119,6 +119,7 @@ AskUserQuestion:
 Q1: "Which skills do you expect to use most?" (header: "Skills", multiSelect: true)
   - "/plan-interview — get interviewed hard to turn a rough idea into a step-by-step plan"
   - "/handoff — the session-close step: a note the next session starts from (two-case rule, WORKFLOW.md §4)"
+  - "/next-ticket — dispatch mode: one session hands each ticket to a fresh agent; you decide and commit (WORKFLOW.md §4.1)"
   - "/tdd — red → green test-driven implementation"
   - "/code-review — two-axis (standards + spec) review of a diff"
   - "/diagnosing-bugs — structured loop for hard bugs and regressions"
@@ -167,7 +168,8 @@ After questionnaires, prep the repo:
   Workflow:      WORKFLOW.md filled; docs/handoff/ and .claude/rules/ scaffolded
   Next: Describe your first feature — run /plan-interview to turn it into a
         step-by-step plan, then build it, using /tdd if you chose test-first.
-        Close the session with /handoff when a next step is clear (WORKFLOW.md §4).
+        Close the session with /handoff when a next step is clear (WORKFLOW.md §4),
+        or run the plan in dispatch mode with /next-ticket (WORKFLOW.md §4.1).
 ===
 ```
 

@@ -22,6 +22,7 @@ You don't need to memorize commands. Just say what you're doing, and the right h
 - **Wrote something and want it checked?** Say *"review my changes."*
 - **Something's broken?** Say *"help me figure out this bug."*
 - **Done for the day, or the chat is getting long?** Say *"write the handoff"* — Claude writes a short note of exactly where things stand so the next chat can pick up without re-explaining. Starting the next chat from that note works better than letting one chat run forever.
+- **Have a plan with many tickets and don't want to open a new chat for each?** Say *"switch to dispatch."* One chat hands each ticket to a fresh helper; you still answer its questions, approve its plan and make the commits, then reply *"next"*. Say *"go manual"* to return to one chat per ticket.
 - **Want an extra safety net on your code history?** Say *"block the dangerous git commands."* Claude will set it up and tell you exactly what changed.
 - **Want a written record of a chat?** Say *"save this conversation."*
 

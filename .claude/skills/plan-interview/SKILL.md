@@ -33,6 +33,15 @@ Once the interview reaches shared understanding, **write the result down** so it
 
 Save the plan where the project keeps planning docs (e.g. `docs/` or `.scratch/`); if there's no obvious home, ask the user where they want it. State the path when you're done.
 
+## Close: choose how the plan will run
+
+When the plan is written, ask the owner which mode to run it in (`WORKFLOW.md` §4.1), with each explanation inside its option:
+
+- **Manual** — one session per ticket, as before: the owner opens each session from its handoff.
+- **Dispatch** — one session runs `/next-ticket` and gives each ticket to a fresh agent; the owner answers questions, approves plans and commits in that one session, and replies "next" between tickets.
+
+Record the answer in the `Mode:` line of the handoff that closes this session (or, if none is written, in auto-memory). The owner can switch later at any time by asking.
+
 ## Key rules
 
 - **One question at a time**, each with your recommended answer.

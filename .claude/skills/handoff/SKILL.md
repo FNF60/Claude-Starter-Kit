@@ -17,6 +17,8 @@ A finished topic with no successor gets **no handoff**: archive the one this ses
 
 The owner can also ask for one; their arguments describe what the next session will focus on — tailor the "Next session" section to them.
 
+**In dispatch mode** (`WORKFLOW.md` §4.1) the `ticket-agent` writes the case-2 handoff when it finishes its ticket; the dispatcher session writes none of its own, because the live ticket handoff already carries `Mode: dispatch`.
+
 ## Where and how to name
 
 - Save under `docs/handoff/` in the repo root. Never outside the project — a fresh session must find it.
@@ -27,6 +29,7 @@ The owner can also ask for one; their arguments describe what the next session w
 - **Follow `template.md` in this folder.** It is the template of record; do not model the file on a previous handoff.
 - Reference, never duplicate: PRDs, plan lines, ADRs, issues, commits and diffs are cited by path, URL or SHA.
 - **Verification record is facts only.** A row comes from a command run in this session. Anything not re-run is listed under "Not verified", never asserted. If something failed once and passed on retry, say so.
+- **Carry the mode.** Fill the header's `Mode:` line (`manual` or `dispatch`, `WORKFLOW.md` §4.1): copy it from the handoff this session started from, unless the owner switched this session; a `ticket-agent` always writes `dispatch`. If no mode was ever chosen, ask the owner rather than default.
 - Ratifications are the owner's words, dated, with the options not taken.
 - **"Dead ends and refusals" is mandatory.** The next session retries anything not written there.
 - The "Next session" section opens with the template's distrust clause (the repo is the record, the file is a claim) and the clarification line.

@@ -26,11 +26,14 @@ your-project/
 │   ├── rules/.gitkeep                  <- Path-scoped convention files, one per area (every file carries `paths:`)
 │   ├── bin/
 │   │   └── save_conversation.py        <- Transcript exporter used by /save-conversation
+│   ├── agents/
+│   │   └── ticket-agent.md             <- Implements one ticket for the /next-ticket dispatcher (plan, then build)
 │   └── skills/
 │       ├── setup/skill.md              <- /setup — configures new projects, learns existing ones, --refresh updates
 │       ├── setup/ONBOARD-SCAN.md       <-   the existing-codebase scan /setup runs (referenced on demand)
 │       ├── handoff/SKILL.md            <- /handoff — the session-close step (two-case rule, archive)
 │       ├── handoff/template.md         <-   the handoff template of record
+│       ├── next-ticket/SKILL.md        <- /next-ticket — dispatch mode: a fresh agent per ticket, owner decides + commits
 │       ├── save-conversation/SKILL.md  <- /save-conversation — condensed session transcript export
 │       ├── plan-interview/SKILL.md     <- /plan-interview — interview → step-by-step plan (+ CONTEXT.md/ADRs)
 │       ├── codebase-design/            <- /codebase-design — deep-module / interface / seam design
@@ -81,6 +84,7 @@ The kit changes; projects installed from it should not drift forever. Two steps,
 What the kit installs is not only files; it is a session-to-session rhythm, refined over ~50 agent sessions on a production project. The short version — the long one, with diagrams, is [WORKFLOW.md](WORKFLOW.md):
 
 - **One ticket per session.** A session opens from a handoff, runs `git status` and the tests before trusting it, reads the area's rules file in full, works, and closes.
+- **Or dispatch mode.** One session runs `/next-ticket` and hands each ticket to a fresh `ticket-agent`; the owner answers questions, approves plans and commits in that one session, then replies "next". The owner picks the mode (at the close of `/plan-interview`, in the handoff's `Mode:` line, or by asking) and can switch at any time.
 - **Handoffs, two cases only.** A handoff is written when the same task continues in a new session (the chat is at ~40 % of the model's window) or when a ticket is done and the next one is clear. A finished topic with no successor writes none. `/handoff` uses `handoff/template.md`; consumed handoffs move to `docs/handoff/archive/`.
 - **Context in layers.** `CLAUDE.md` (always loaded, under 200 lines, pins only) → `.claude/rules/<area>.md` (loaded when a matching file is opened) → the handoff (between sessions) → auto-memory (durable facts, outside the repo) → compaction only as a fallback, with `autoCompactWindow` set above the rotation point.
 - **Stage only, by default.** Agents stage and propose a commit message; the human commits. Risk-surface changes get `/code-review` before they are staged for push.
@@ -95,6 +99,7 @@ What the kit installs is not only files; it is a session-to-session rhythm, refi
 |---------|------|-------------|
 | `/setup` | First time in a project; `--refresh` later | Detects new vs. existing; scans + drafts CLAUDE.md, or runs the greenfield wizard; refresh adds new sections without losing edits |
 | `/handoff` | Session close (two-case rule) | Writes the handoff from `template.md`, archives the consumed one, stages |
+| `/next-ticket` | Dispatch mode: a run of tickets without a new session each | Gives each ticket to a fresh `ticket-agent` (plan → owner decides → build → review → stage + handoff); waits for the owner's commit and "next" |
 | `/save-conversation <slug>` | When you want a record | Saves a condensed transcript to `Supplementary AI md files/Conversations/YYYY-MM-DD-HHMM-<slug>.md` |
 
 ### Engineering skill set
