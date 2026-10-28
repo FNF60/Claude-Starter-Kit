@@ -159,7 +159,8 @@ flowchart TD
     N --> Q[git mv the consumed handoff&lt;br/&gt;to docs/handoff/archive/]
     O --> Q
     P --> Q
-    Q --> R[Stage. Prompt the owner&lt;br/&gt;for the commit message.]
+    Q --> T[Save the transcript:&lt;br/&gt;/save-conversation 'ticket implementation']
+    T --> R[Stage. Prompt the owner&lt;br/&gt;for the commit message.]
     R --> S([Rotate: new session])
     classDef term stroke-width:1px
     classDef dec stroke-width:1px
@@ -194,7 +195,8 @@ flowchart TD
     H -- yes --> I[Dispatcher runs /code-review.&lt;br/&gt;Agent fixes the findings]
     I --> J
     H -- no --> J[Agent stages, writes the next&lt;br/&gt;handoff, proposes the message]
-    J --> K[Owner commits and pushes,&lt;br/&gt;replies next]
+    J --> T[Dispatcher saves the agent's&lt;br/&gt;transcript and stages it]
+    T --> K[Owner commits and pushes,&lt;br/&gt;replies next]
     K --> L[Dispatcher checks git:&lt;br/&gt;new commit, nothing staged]
     L --> B
     classDef term stroke-width:1px
@@ -261,7 +263,7 @@ flowchart LR
       <tr><td>Plan and spec</td><td>Ticket lines with their dated "Done" paragraphs; ground truth</td><td>Humans and agents at ticket end</td><td>By pointer, never whole-file when large</td></tr>
       <tr><td>docs/handoff/</td><td>Ticket state between sessions</td><td><code>/handoff</code> at session close</td><td>Session open</td></tr>
       <tr><td>Auto-memory</td><td>Durable facts and preferences about the owner and the project</td><td>The agent, when a fact is confirmed</td><td>Session open and on recall</td></tr>
-      <tr><td>Transcripts</td><td>What was said, condensed</td><td><code>/save-conversation</code></td><td>Rarely; audit and workflow history</td></tr>
+      <tr><td>Transcripts</td><td>What was said, condensed; one per ticket</td><td><code>/save-conversation</code> at each ticket close</td><td>Rarely; audit and workflow history</td></tr>
       <tr><td>Compaction</td><td>A summary of an overrun session</td><td>The harness</td><td>Only past <code>autoCompactWindow</code></td></tr>
     </tbody>
   </table>

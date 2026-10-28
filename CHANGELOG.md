@@ -2,6 +2,14 @@
 
 The kit's own decision record: what changed, why, and the options not taken. Dated entries, newest first. A project that installs the kit keeps its own decisions in its plan registries, ADRs or handoffs — not here.
 
+## 2026-10-28 — A transcript per ticket
+
+- **Every finished ticket saves its transcript** as `<ticket id> implementation` (owner, 2026-10-28: "on finishing each ticket, it must run the save-conversation skill with a slug "[ticket number] implementation""), staged with the ticket so it lands in the same commit. Manual mode: the session saves itself after `/handoff`; a ticket spanning sessions saves `… part <n>` because a re-saved slug replaces the file.
+- **Dispatch mode saves the ticket-agent's own transcript**, not the dispatcher's session: "Can't it save the corresponding subagent sessions, which are the ones that actually implement each ticket? And then only save the "main" dispatch one once that has a filled up context window … and needs the user to start a new one." The dispatcher names each agent `<ticket id> ticket-agent` and saves its own session once, as `dispatch <first>-<last>`, when it ends. *Not taken:* a `--since` cut of the dispatcher's session per ticket; saving the whole dispatcher session at every ticket (overlapping files).
+- **`save_conversation.py` gains `list-agents` and `save-agent`**, reading `<session>/subagents/agent-<id>.jsonl` and its `.meta.json` (sidechain records allowed; a `SubagentHandback` report rendered as the agent's reply; several runs with one description written as sections, so a restarted agent loses nothing).
+- **Parser fix, affects every transcript:** user messages stored as a plain string were dropped, losing some real prompts and every slash command (e.g. `/model opus`, despite the documented compact rendering), and with them the assistant reply that preceded one. Re-rendering seven existing sessions: nothing removed, only those turns restored. Transcripts are now also written with LF on every OS (they came out CRLF on Windows).
+- Touched: `.claude/bin/save_conversation.py`, `save-conversation/SKILL.md` ("At a ticket close"), `handoff/SKILL.md` (Finish), `next-ticket/SKILL.md`, `agents/ticket-agent.md`, `WORKFLOW.md` (§3, §4 diagram, §4.1, §5), the `CLAUDE.md` template, `README.md`, `docs/workflow-overview.html`.
+
 ## 2026-10-27 — Dispatch mode
 
 Came from the first project running on the kit: after a ticket closed, the owner asked how the jump to the next session could be automated, keeping only decisions and commits for themselves. Decisions (owner, 2026-10-27), each with the alternatives considered:

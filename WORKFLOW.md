@@ -47,7 +47,7 @@ The ticket line is the durable record. The handoff that closed the ticket is arc
 4. Build. Definition of done: the Quality Bar in `CLAUDE.md` (tests, lint, typecheck green; no debug artifacts; project-specific gates).
 5. **Risk-surface changes (the list in `CLAUDE.md`) get `/code-review` before anything is staged for push.** This review is the quality gate that a pull request would otherwise provide.
 6. Stage. The commit is the human's (§7). Reference the issue in the message when one exists.
-7. Close the session by the two-case rule (§4). In dispatch mode the `ticket-agent` writes the handoff and the dispatcher moves to the next ticket once the owner has committed (§4.1).
+7. Close the session by the two-case rule (§4), then save the transcript as `/save-conversation "<ticket id> implementation"` and stage it with the ticket. In dispatch mode the `ticket-agent` writes the handoff and the dispatcher moves to the next ticket once the owner has committed (§4.1).
 
 ## 4. The session lifecycle
 
@@ -77,7 +77,8 @@ flowchart TD
     N --> Q[git mv the consumed handoff<br/>to docs/handoff/archive/]
     O --> Q
     P --> Q
-    Q --> R[Stage. Prompt the owner<br/>for the commit message.]
+    Q --> T[Save the transcript:<br/>/save-conversation 'ticket implementation']
+    T --> R[Stage. Prompt the owner<br/>for the commit message.]
     R --> S([Rotate: new session])
 ```
 
@@ -112,7 +113,8 @@ flowchart TD
     H -- yes --> I[Dispatcher runs /code-review.<br/>Agent fixes the findings]
     I --> J
     H -- no --> J[Agent stages, writes the next<br/>handoff, proposes the message]
-    J --> K[Owner commits and pushes,<br/>replies next]
+    J --> T[Dispatcher saves the agent's<br/>transcript and stages it]
+    T --> K[Owner commits and pushes,<br/>replies next]
     K --> L[Dispatcher checks git:<br/>new commit, nothing staged]
     L --> B
 ```
@@ -124,6 +126,10 @@ flowchart TD
 - by asking — "switch to dispatch" runs `/next-ticket`; "go manual" makes the dispatcher set the live handoff to `Mode: manual` and stop.
 
 **Who does what in dispatch mode.** The `ticket-agent` reads, plans, builds, verifies, stages and writes the case-2 handoff; it cannot talk to the owner, so its questions come back in its report with each alternative explained. The dispatcher never reads code or edits project files: it relays questions (`AskUserQuestion`, explanations inside the options), writes ratifications to auto-memory the moment they are made, runs `/code-review` on risk-surface tickets so the builder never reviews itself, and checks `git status` / `git log` and the tests before handing over. Agent reports are claims; git and the test run are the record.
+
+**Transcripts in both modes.** Every finished ticket leaves `docs/Supplementary AI md files/Conversations/<date>-<ticket id> implementation.md`, staged with the ticket so it lands in the same commit.
+- **Manual:** the session saves itself after `/handoff`. A ticket that runs into a second session saves `… implementation part <n>`.
+- **Dispatch:** the dispatcher saves the **ticket-agent's** transcript, found by the agent's description `<ticket id> ticket-agent`, and saves its own session once, as `dispatch <first>-<last>`, when it ends (`/save-conversation`, "At a ticket close").
 
 **Where dispatch stops.** The owner says stop; a milestone closes (ask before the next one); the next ticket is blocked on the owner or does not exist; an agent fails twice on one ticket (offer manual mode with the same handoff); or the dispatcher's own context reaches the rotation point (§5) — the owner opens a new session, and the live handoff's `Mode: dispatch` resumes the loop. The dispatcher writes no handoff of its own.
 
@@ -172,7 +178,7 @@ flowchart LR
 | `WORKFLOW.md`, the plan, the spec | Process, ticket lines, ground truth | Humans + agents at ticket end | By pointer, never whole-file when large |
 | `docs/handoff/` | Ticket state between sessions | `/handoff` at session close | Session open |
 | Auto-memory | Durable facts and preferences about the owner and the project | The agent, at the moment a fact is confirmed | Session open (index) and on recall |
-| Saved transcripts | What was said, condensed | `/save-conversation <slug>` | Rarely; audit and workflow history |
+| Saved transcripts | What was said, condensed; one per ticket (`<ticket id> implementation`) | `/save-conversation` at each ticket close (§4.1) | Rarely; audit and workflow history |
 | Compaction | A summary of an overrun session | The harness | Only past `autoCompactWindow` |
 
 **Rotation point and the compaction window. [declared]** The owner rotates sessions by handoff at **about 40 % of the model's window** (≈400K tokens on a 1M model) — quality drops well before the window fills, and a written handoff carries state better than a summary. `autoCompactWindow` in `.claude/settings.json` (a token count) is set **above** that point — kit default `500000`, sized for 1M-context models — so compaction only fires on a session that overran. Claude Code caps the value at the model's own window, so on a 200K-context model `500000` means "compact at the limit"; set it to about half that model's window (`100000`) if you want the same safety net there. `CLAUDE.md` carries a "Compact Instructions" section listing what a summary must keep verbatim (ticket id, file paths, ratifications, commands run and their results, what is staged). What the docs guarantee is narrower: after compaction the project-root `CLAUDE.md` is re-read from disk, so the section at least tells the post-compaction agent what to go and re-verify; path-scoped rules files are summarized away and must be read again.

@@ -48,3 +48,5 @@ Edit those paths to `docs/handoff/archive/…`. Files already inside `docs/hando
 ## Finish
 
 Stage the new file, the move and the repointed references. Committing follows the project's commit policy in `CLAUDE.md` (the kit default is stage-only: prompt the owner with a proposed message). State in the recap that the handoff was written and which file was archived.
+
+**Then save the transcript (manual mode).** Run `/save-conversation "<ticket id> implementation"` for the ticket this session worked on (`<ticket id> implementation part <n>` when the ticket continues in another session) and stage the file with the handoff. In dispatch mode a `ticket-agent` skips this step: the dispatcher saves the agent's transcript (`/next-ticket`).

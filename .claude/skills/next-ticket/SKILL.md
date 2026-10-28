@@ -4,7 +4,7 @@ description: Dispatch mode (WORKFLOW.md §4.1). Run this session as a dispatcher
 argument-hint: "Optional: the ticket id to start from (default: the live handoff's next ticket)"
 ---
 
-Run this session as the **dispatcher**. Each ticket gets a fresh `ticket-agent` (`.claude/agents/ticket-agent.md`), so every ticket still starts from a clean context. The owner keeps every decision and every commit. This session only routes: it never reads the code and never edits project files. It reads the agents' reports, asks the owner, writes ratifications to auto-memory, and checks git. That keeps its own context small enough to run many tickets.
+Run this session as the **dispatcher**. Each ticket gets a fresh `ticket-agent` (`.claude/agents/ticket-agent.md`), so every ticket still starts from a clean context. The owner keeps every decision and every commit. This session only routes: it never reads the code and never edits project files. It reads the agents' reports, asks the owner, writes ratifications to auto-memory, saves transcripts, and checks git. That keeps its own context small enough to run many tickets.
 
 ## Start
 
@@ -14,7 +14,7 @@ Run this session as the **dispatcher**. Each ticket gets a fresh `ticket-agent` 
 
 ## The loop (one ticket per pass)
 
-1. **Plan.** Start the agent: `Agent(subagent_type: "ticket-agent", prompt: <brief>)`. The brief contains:
+1. **Plan.** Start the agent: `Agent(subagent_type: "ticket-agent", description: "<ticket id> ticket-agent", prompt: <brief>)`. The description is how its transcript is found later, so keep it exactly that. The brief contains:
    - the ticket id and the live handoff's path
    - "Phase 1 only: plan, no writes."
    - any ratification from earlier in this session that applies
@@ -25,11 +25,18 @@ Run this session as the **dispatcher**. Each ticket gets a fresh `ticket-agent` 
 4. **Act on the report's status:**
    - `BLOCKED`: ask the owner as in step 2, send the answer, wait again.
    - `REVIEW_NEEDED`: run `/code-review` against `HEAD` here, in this session, so the builder never reviews its own work. Send the findings to the agent with "Fix, re-verify, then finalize." Wait.
-   - `STAGED`: run `git status` to confirm what's staged, and run the test command once yourself.
+   - `STAGED`: run `git status` to confirm what's staged, and run the test command once yourself. Then save the agent's transcript and stage it with the ticket. Get this session's id from `python .claude/bin/save_conversation.py list-sessions`, then:
+
+     ```bash
+     python .claude/bin/save_conversation.py save-agent <session-id> "<ticket id> ticket-agent" "<ticket id> implementation"
+     git add "<path the script printed>"
+     ```
+
+     See `/save-conversation`, "At a ticket close".
 5. **Hand over.** Show the owner, briefly:
    - what changed
    - the verification lines
-   - the handoff path
+   - the handoff and transcript paths
    - the proposed commit message
 
    End with: "Commit and push, then reply **next** (or **stop** / **go manual**)."
@@ -42,6 +49,10 @@ Run this session as the **dispatcher**. Each ticket gets a fresh `ticket-agent` 
 - The next ticket is blocked on the owner, or no next ticket exists.
 - An agent fails twice on the same ticket. Report it, and offer manual mode with the same handoff.
 - This session reaches about 40 % of the window. Tell the owner to open a new session. The live handoff already says `Mode: dispatch`, so the new session resumes the loop. The dispatcher writes no handoff of its own.
+
+**Save this session once, when it ends.** Run `/save-conversation "dispatch <first ticket>-<last ticket>"` (e.g. `dispatch C0.2-C1.3`).
+- **At the rotation point:** do it at the last hand-over, before the owner commits, and stage it with that ticket.
+- **At any other stop:** stage it and ask the owner to commit it, so the next session starts on a clean tree.
 
 ## Switching modes
 

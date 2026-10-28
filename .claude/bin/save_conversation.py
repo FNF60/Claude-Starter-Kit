@@ -5,9 +5,20 @@ Save Current Claude Code Session as a Condensed Markdown Transcript
 Commands
   list-sessions [--cwd PATH]            List recent .jsonl sessions as JSON
   save SESSION_ID SLUG [--cwd PATH]     Parse JSONL + write markdown transcript
+  list-agents SESSION_ID [--cwd PATH]   List the session's subagents as JSON
+  save-agent SESSION_ID AGENT SLUG [--cwd PATH]
+                                        Write the transcript of the subagent(s)
+                                        whose id or description is AGENT
 
-The script is invoked by the /save-conversation skill. It handles all file I/O;
-the skill (SKILL.md) handles slug validation and the interactive session picker.
+The script is invoked by the /save-conversation skill (and by /next-ticket for
+ticket-agent transcripts, WORKFLOW.md §4.1). It handles all file I/O; the skill
+(SKILL.md) handles slug validation and the interactive session picker.
+
+Subagent transcripts live in <transcript-dir>/<session-id>/subagents/ as
+agent-<id>.jsonl plus agent-<id>.meta.json (agentType, description). Every
+record there is a sidechain; the "user" turns are the parent's brief and
+follow-up messages, and the agent's final report may arrive as a
+SubagentHandback tool call, which is rendered as its reply.
 
 The transcript keeps only the conversation's main turns:
   - user prompts (plus reasons typed when rejecting a tool call)
@@ -225,9 +236,10 @@ def _parse_answers_fallback(content: str) -> dict:
     return dict(re.findall(r'"(.+?)"="(.+?)"', content, re.S))
 
 
-def _parse_events(jsonl_path: Path) -> tuple:
+def _parse_events(jsonl_path: Path, include_sidechain: bool = False) -> tuple:
     """
     Parse a .jsonl transcript into a condensed list of rendering events.
+    include_sidechain=True reads a subagent transcript, where every record is one.
 
     Returns (events, session_id) where events is a list of dicts:
       {'kind': 'user',           'text': str}   — a real user prompt
@@ -260,7 +272,7 @@ def _parse_events(jsonl_path: Path) -> tuple:
     pending_ask = {}  # tool_use_id → AskUserQuestion input
 
     for obj in raw_lines:
-        if obj.get('isSidechain') or obj.get('isMeta'):
+        if (obj.get('isSidechain') and not include_sidechain) or obj.get('isMeta'):
             continue
         t = obj.get('type')
 
@@ -282,12 +294,21 @@ def _parse_events(jsonl_path: Path) -> tuple:
                     # Any tool call ends the current text run, so that only
                     # text written after the turn's last tool call survives.
                     stream.append({'kind': 'break'})
+                    if block.get('name') == 'SubagentHandback':
+                        # A subagent's final report: render it as its reply.
+                        report = str(block.get('input', {}).get('message', '')).strip()
+                        if report:
+                            stream.append({'kind': 'atext', 'text': report})
 
         elif t == 'user':
             msg = obj.get('message', {})
             if msg.get('role') != 'user':
                 continue
-            for block in msg.get('content', []):
+            content = msg.get('content', [])
+            if isinstance(content, str):
+                # Plain-string content (e.g. a subagent's brief) is one text block.
+                content = [{'type': 'text', 'text': content}]
+            for block in content:
                 if not isinstance(block, dict):
                     continue
                 btype = block.get('type')
@@ -366,10 +387,10 @@ def _condense(stream: list) -> list:
 
 # ── markdown rendering ─────────────────────────────────────────────────────────
 
-def _render_markdown(events: list, session_id: str) -> str:
+def _render_markdown(events: list, session_id: str, title: str = '') -> str:
     """Render the condensed event list as a markdown transcript."""
     parts = [
-        f'# Session: {session_id}',
+        f'# {title or "Session: " + session_id}',
         f'',
         f'_Exported: {datetime.now().strftime("%Y-%m-%d %H:%M")}_',
         '',
@@ -490,14 +511,7 @@ def cmd_save(argv: list):
 
     session_id = argv[0]
     slug = argv[1]
-    cwd = Path.cwd()
-    i = 2
-    while i < len(argv):
-        if argv[i] == '--cwd' and i + 1 < len(argv):
-            cwd = Path(argv[i + 1])
-            i += 2
-        else:
-            i += 1
+    cwd = _parse_cwd(argv, 2)
 
     tdir = _transcript_dir(cwd)
     jsonl_path = tdir / f'{session_id}.jsonl'
@@ -505,6 +519,93 @@ def cmd_save(argv: list):
         print(f'ERROR: transcript not found: {jsonl_path}', file=sys.stderr)
         sys.exit(1)
 
+    events, resolved_id = _parse_events(jsonl_path)
+    _write_transcript(_render_markdown(events, resolved_id), slug, cwd)
+
+
+def _parse_cwd(argv: list, start: int) -> Path:
+    cwd = Path.cwd()
+    i = start
+    while i < len(argv):
+        if argv[i] == '--cwd' and i + 1 < len(argv):
+            cwd = Path(argv[i + 1])
+            i += 2
+        else:
+            i += 1
+    return cwd
+
+
+def _subagents(session_id: str, cwd: Path) -> list:
+    """Metadata of the session's subagents, oldest first."""
+    sdir = _transcript_dir(cwd) / session_id / 'subagents'
+    agents = []
+    for meta_path in sdir.glob('agent-*.meta.json'):
+        jsonl = meta_path.with_name(meta_path.name[: -len('.meta.json')] + '.jsonl')
+        if not jsonl.exists():
+            continue
+        try:
+            meta = json.loads(meta_path.read_text(encoding='utf-8'))
+        except (OSError, json.JSONDecodeError):
+            meta = {}
+        mtime = datetime.fromtimestamp(jsonl.stat().st_mtime, tz=timezone.utc)
+        agents.append({
+            'agent_id': jsonl.stem[len('agent-'):],
+            'agent_type': meta.get('agentType', ''),
+            'description': meta.get('description', ''),
+            'path': str(jsonl),
+            'mtime': mtime.astimezone().strftime('%H:%M'),
+            'mtime_iso': mtime.isoformat(),
+        })
+    agents.sort(key=lambda a: a['mtime_iso'])
+    return agents
+
+
+def cmd_list_agents(argv: list):
+    """list-agents SESSION_ID [--cwd PATH]  →  JSON array of subagent metadata"""
+    if not argv:
+        print('Usage: list-agents SESSION_ID [--cwd PATH]', file=sys.stderr)
+        sys.exit(1)
+    agents = _subagents(argv[0], _parse_cwd(argv, 1))
+    print(json.dumps(agents, indent=2, ensure_ascii=False))
+
+
+def cmd_save_agent(argv: list):
+    """save-agent SESSION_ID AGENT SLUG [--cwd PATH]  →  write subagent transcript
+
+    AGENT matches an agent id or, case-insensitively, a description. Several
+    matches (an agent restarted for the same ticket) are written in order, one
+    section each, so no run is lost.
+    """
+    if len(argv) < 3:
+        print('Usage: save-agent SESSION_ID AGENT SLUG [--cwd PATH]', file=sys.stderr)
+        sys.exit(1)
+    session_id, agent, slug = argv[0], argv[1], argv[2]
+    cwd = _parse_cwd(argv, 3)
+
+    agents = _subagents(session_id, cwd)
+    wanted = agent.strip().lower()
+    matches = [
+        a for a in agents
+        if a['agent_id'] == agent or a['description'].strip().lower() == wanted
+    ]
+    if not matches:
+        print(f'ERROR: no subagent "{agent}" in session {session_id}', file=sys.stderr)
+        known = ', '.join(f'"{a["description"]}"' for a in agents) or 'none'
+        print(f'Known: {known}', file=sys.stderr)
+        sys.exit(1)
+
+    sections = []
+    for n, a in enumerate(matches, 1):
+        events, _ = _parse_events(Path(a['path']), include_sidechain=True)
+        label = a['description'] or a['agent_id']
+        title = f'Agent: {label} ({a["agent_type"] or "agent"}, session {session_id})'
+        if len(matches) > 1:
+            title += f' · run {n} of {len(matches)}'
+        sections.append(_render_markdown(events, session_id, title))
+    _write_transcript('\n\n'.join(sections), slug, cwd)
+
+
+def _write_transcript(markdown: str, slug: str, cwd: Path):
     out_dir = _output_dir(cwd)
     if not out_dir.exists():
         print(f'ERROR: output dir does not exist: {out_dir}', file=sys.stderr)
@@ -513,11 +614,8 @@ def cmd_save(argv: list):
     # Remove any previous file for this slug (one file per slug at a time)
     _delete_slug(slug, out_dir)
 
-    events, resolved_id = _parse_events(jsonl_path)
-    markdown = _render_markdown(events, resolved_id)
-
     out_file = _output_path(slug, cwd)
-    out_file.write_text(markdown, encoding='utf-8')
+    out_file.write_text(markdown, encoding='utf-8', newline='\n')  # LF on every OS
 
     line_count = markdown.count('\n') + 1
     print(f'Saved: {out_file}')
@@ -545,9 +643,13 @@ def main():
         cmd_list_sessions(rest)
     elif cmd == 'save':
         cmd_save(rest)
+    elif cmd == 'list-agents':
+        cmd_list_agents(rest)
+    elif cmd == 'save-agent':
+        cmd_save_agent(rest)
     else:
         print(f'ERROR: unknown command: {cmd}', file=sys.stderr)
-        print('Commands: list-sessions, save', file=sys.stderr)
+        print('Commands: list-sessions, save, list-agents, save-agent', file=sys.stderr)
         sys.exit(1)
 
 

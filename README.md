@@ -100,7 +100,7 @@ What the kit installs is not only files; it is a session-to-session rhythm, refi
 | `/setup` | First time in a project; `--refresh` later | Detects new vs. existing; scans + drafts CLAUDE.md, or runs the greenfield wizard; refresh adds new sections without losing edits |
 | `/handoff` | Session close (two-case rule) | Writes the handoff from `template.md`, archives the consumed one, stages |
 | `/next-ticket` | Dispatch mode: a run of tickets without a new session each | Gives each ticket to a fresh `ticket-agent` (plan → owner decides → build → review → stage + handoff); waits for the owner's commit and "next" |
-| `/save-conversation <slug>` | When you want a record | Saves a condensed transcript to `Supplementary AI md files/Conversations/YYYY-MM-DD-HHMM-<slug>.md` |
+| `/save-conversation <slug>` | At every ticket close (`<ticket id> implementation`), or whenever you want a record | Saves a condensed transcript to `Supplementary AI md files/Conversations/YYYY-MM-DD-HHMM-<slug>.md` |
 
 ### Engineering skill set
 

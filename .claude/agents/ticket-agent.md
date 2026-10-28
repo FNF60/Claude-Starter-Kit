@@ -39,7 +39,7 @@ Every alternative carries its own explanation. The dispatcher pastes them into t
 - **Finalize:**
   1. Add the ticket's "Done" paragraph to its plan line (`WORKFLOW.md` §2), including the ratifications the dispatcher forwarded.
   2. Stage with `git add`. **Never commit or push.**
-  3. Write the handoff for the next ticket with `/handoff`, with `Mode: dispatch`. If the Skill tool is unavailable, read `.claude/skills/handoff/SKILL.md` and follow it. If no next ticket exists, follow the skill's no-successor rule.
+  3. Write the handoff for the next ticket with `/handoff`, with `Mode: dispatch`. Do not run `/save-conversation`: the dispatcher saves your transcript. If the Skill tool is unavailable, read `.claude/skills/handoff/SKILL.md` and follow it. If no next ticket exists, follow the skill's no-successor rule.
   4. Return the report.
 
 ```
