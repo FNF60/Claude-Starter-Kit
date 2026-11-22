@@ -259,7 +259,7 @@ Default to turn-based work with verification skills (`/tdd`, `/code-review`). Us
 |---|---|
 | First session in a project, or when `CLAUDE.md` is stale | `/setup` (`--refresh` to pick up drift without losing edits) |
 | Before building something non-trivial | `/plan-interview` |
-| Test-first implementation | `/tdd` |
+| Tests for a change: red-first for new behavior and bug fixes, pin-first (green) before a refactor | `/tdd` |
 | Any risk-surface change, before push | `/code-review` |
 | Session close (two-case rule) | `/handoff` |
 | Run tickets back to back through fresh agents (dispatch mode, §4.1) | `/next-ticket` |

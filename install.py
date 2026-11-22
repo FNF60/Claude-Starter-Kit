@@ -60,17 +60,20 @@ KIT_FILES = [
     ".claude/skills/tdd/SKILL.md",
     ".claude/skills/tdd/mocking.md",
     ".claude/skills/tdd/tests.md",
+    ".claude/skills/tdd/pin-and-proof.md",
     ".claude/skills/code-review/SKILL.md",
     ".claude/skills/loop-me/SKILL.md",
     ".claude/skills/obsidian-vault/SKILL.md",
     ".claude/skills/git-guardrails/SKILL.md",
-    ".claude/skills/git-guardrails/scripts/block-dangerous-git.sh",
+    ".claude/skills/git-guardrails/scripts/block-dangerous-git.py",
+    ".claude/skills/git-guardrails/scripts/test_block_dangerous_git.py",
 ]
 
 # Files earlier kit versions shipped and this one no longer does. Never deleted
 # by the installer — only reported, so the user removes them knowingly.
 RETIRED_KIT_FILES = [
     ".claude/skills/wrap/skill.md",  # removed 2026-10-07: /handoff is the one session-close step
+    ".claude/skills/git-guardrails/scripts/block-dangerous-git.sh",  # replaced 2026-11-21 by the Python hook
 ]
 
 # Other AI tooling configs we want to surface — not to overwrite, just to mention.

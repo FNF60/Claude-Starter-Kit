@@ -179,7 +179,7 @@ After questionnaires, prep the repo:
 AskUserQuestion:
 
 Q: "Want any of these extras?" (header: "Extras", multiSelect: true)
-  - "Hard git guardrails — block push/reset --hard/clean/branch -D via a hook (runs the /git-guardrails skill)"
+  - "Hard git guardrails — block push/reset --hard/clean -f/branch -D (and commit/rebase when stage-only) via a hook (runs the /git-guardrails skill)"
   - "Obsidian vault integration — let Claude read/write your notes vault (/obsidian-vault)"
   - "Session transcripts — remember /save-conversation for a verbatim record"
   - "None — the basics are fine"

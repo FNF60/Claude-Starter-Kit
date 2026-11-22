@@ -40,7 +40,7 @@ your-project/
 │       ├── domain-modeling/            <- /domain-modeling — domain language + ADRs
 │       ├── improve-codebase-architecture/ <- /improve-codebase-architecture — deepening report
 │       ├── diagnosing-bugs/            <- /diagnosing-bugs — structured hard-bug diagnosis loop
-│       ├── tdd/                        <- /tdd — red → green test-driven implementation
+│       ├── tdd/                        <- /tdd — red → green for new behavior, pin-first (green) tests before a refactor
 │       ├── code-review/SKILL.md        <- /code-review — two-axis (standards + spec) review
 │       ├── loop-me/SKILL.md            <- /loop-me — stateful interview that outputs workflow specs
 │       ├── obsidian-vault/SKILL.md     <- /obsidian-vault — read/write an Obsidian notes vault
@@ -111,11 +111,11 @@ What the kit installs is not only files; it is a session-to-session rhythm, refi
 | `/domain-modeling` | Terms getting fuzzy | Sharpen domain language; record hard-to-reverse decisions as ADRs |
 | `/improve-codebase-architecture` | Spare cycles | Scan for deepening opportunities, present an HTML report, plan-interview the one you pick |
 | `/diagnosing-bugs` | Something's broken/slow | Structured diagnosis loop built around a tight pass/fail signal |
-| `/tdd` | Implementing | Red → green test-driven cycle |
+| `/tdd` | Implementing, or about to refactor | Red → green cycle for new behavior and bug fixes; pin-first (green) tests that guard behavior before a refactor or extraction |
 | `/code-review` | Reviewing a diff; always before pushing a risk-surface change | Two-axis review — standards + spec — via parallel sub-agents |
 | `/loop-me` | Defining workflows | Stateful interview whose only output is workflow specs |
 | `/obsidian-vault` | Notes work | Read and write notes in your Obsidian vault |
-| `/git-guardrails` | Want hard git safety | Install a hook that blocks push / reset --hard / clean / branch -D |
+| `/git-guardrails` | Want hard git safety | Install a hook (Bash and PowerShell) that blocks push / reset --hard / clean -f / branch -D, and commit / rebase under a stage-only policy |
 
 ## Permissions (no hooks by default)
 

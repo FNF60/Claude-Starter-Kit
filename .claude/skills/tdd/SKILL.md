@@ -1,11 +1,22 @@
 ---
 name: tdd
-description: Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.
+description: Test-driven development, and its counterpart for refactors. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", wants integration tests, or is about to refactor, extract or move code and needs tests that pin today's behavior first (characterization / golden-master / snapshot tests).
 ---
 
 # Test-Driven Development
 
 TDD is the red → green loop. This skill is the reference that makes that loop produce tests worth keeping: what a good test is, where tests go, the anti-patterns, and the rules of the loop. Every section applies on every cycle — consult them before and during the loop, not after.
+
+## Which kind of test is this work?
+
+There are two kinds, and the kind of work decides which one you write. Decide this first.
+
+| Work | Kind | Order | Expected value comes from |
+|---|---|---|---|
+| New behavior, a changed rule, a bug fix, logic taken from a spec or spreadsheet | **PROOF** (red first) | Write it, watch it fail, change the code, watch it pass | A source outside the code |
+| Refactor, extraction, move, rename, dead-code deletion, dependency swap | **PIN** (green first) | Write it against today's code, watch it pass, prove it can fail, change the code, it must still pass | What today's code produces, right or wrong |
+
+The red → green loop and everything below it is the **PROOF** loop. For the PIN loop, the rules for mixed work, and the anti-patterns of both kinds, read [pin-and-proof.md](pin-and-proof.md). Never mix the two in one step: a refactor that finds a bug pins the bug and fixes it later as its own proof step.
 
 When exploring the codebase, read `CONTEXT.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you're touching.
 

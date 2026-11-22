@@ -1,42 +1,60 @@
 ---
 name: git-guardrails
-description: Set up a Claude Code hook that blocks dangerous git commands (push, reset --hard, clean, branch -D, etc.) before they execute. Use when the user wants to prevent destructive git operations, add git safety hooks, block git push/reset, or says something like "block git's dangerous permissions" / "lock down git".
+description: Set up a Claude Code hook that blocks dangerous git commands (push, reset --hard, clean -f, branch -D, and commit / rebase under a stage-only policy) before they execute, in both the Bash and PowerShell tools. Use when the user wants to prevent destructive git operations, add git safety hooks, block git push/commit, or says something like "block git's dangerous permissions" / "lock down git".
 ---
 
 # Set Up Git Guardrails
 
-Installs a PreToolUse hook that intercepts and blocks dangerous git commands before Claude executes them. This is stronger than the kit's default permissions, which only *prompt* on these commands — the hook turns them into a hard block.
+Installs a PreToolUse hook that intercepts and blocks dangerous git commands before Claude executes them. This is stronger than the kit's default permissions, which only *prompt* on these commands: the hook turns them into a hard block.
 
 ## What Gets Blocked
 
+Always:
+
 - `git push` (all variants including `--force`)
 - `git reset --hard`
-- `git clean -f` / `git clean -fd`
+- `git clean -f` / `-fd` / `-xf`
 - `git branch -D`
-- `git checkout .` / `git restore .`
+- `git checkout .` / `git checkout -f` / `git restore .` (but not `git restore --staged .`)
 
-When blocked, Claude sees a message telling it that it does not have authority to run these commands.
+Additionally when the commit policy is **stage-only** (the kit default: agents stage, the human commits):
+
+- `git commit` (including `--amend`), `git rebase`, `git am`
+- `git cherry-pick` and `git revert`, unless given `--no-commit` / `-n` (they create commits)
+
+Never blocked: `git add`, `git merge`, `git stash`, `git tag`, switching branches, and anything read-only. If a project needs more or fewer, edit the lists in the copied script.
+
+When blocked, Claude sees a message telling it the owner has prevented the command.
+
+## How the script decides
+
+It does not search the command text for "git push". It splits the command into separate commands (on `;`, `&`, `|` and newlines, outside quotes), finds the `git` call in each, skips git's global options (`-C <dir>`, `-c key=value`, `--no-pager`), and checks the real subcommand. So `git -C repo push` is caught (a text search for "git push" misses it), a commit message or `grep 'git push'` is not mistaken for a push, and `bash -c "git push"` / `powershell -Command git push` are looked into. It is a guardrail against accidents, not a security boundary: `eval`, a shell variable holding the subcommand, aliases, and scripts that run git internally are not seen.
 
 ## Steps
 
-### 1. Ask scope
+### 1. Ask scope and commit policy
 
-Ask the user: install for **this project only** (`.claude/settings.json`) or **all projects** (`~/.claude/settings.json`)?
+Ask the user two things:
 
-### 2. Copy the hook script
+- Install for **this project only** (`.claude/settings.json`) or **all projects** (`~/.claude/settings.json`)?
+- Commit policy: **stage-only** (agents never commit; the default) or **auto-commit** (agents may commit and rebase; push is still blocked)? If the project's `CLAUDE.md` already declares a commit policy, propose that one.
 
-The bundled script is at: [scripts/block-dangerous-git.sh](scripts/block-dangerous-git.sh)
+### 2. Copy the scripts
 
-Copy it to the target location based on scope:
+The bundled scripts are in [scripts/](scripts/): `block-dangerous-git.py` (the hook) and `test_block_dangerous_git.py` (its self-test).
 
-- **Project**: `.claude/hooks/block-dangerous-git.sh`
-- **Global**: `~/.claude/hooks/block-dangerous-git.sh`
+Copy both to the target location:
 
-Make it executable with `chmod +x`.
+- **Project**: `.claude/hooks/`
+- **Global**: `~/.claude/hooks/`
 
-### 3. Add hook to settings
+Then set `COMMIT_POLICY` at the top of the copied `block-dangerous-git.py` to the user's answer (`"stage-only"` or `"auto-commit"`).
 
-Add to the appropriate settings file:
+The hook needs Python on the PATH (the kit already uses it for `install.py` and `/save-conversation`). Check with `python --version`; if only `python3` exists, use `python3` in the command below.
+
+### 3. Add the hook to settings
+
+The matcher covers **both** shell tools, because a command run through the PowerShell tool would otherwise bypass a `Bash`-only hook.
 
 **Project** (`.claude/settings.json`):
 
@@ -45,11 +63,11 @@ Add to the appropriate settings file:
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-dangerous-git.sh"
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-dangerous-git.py\""
           }
         ]
       }
@@ -58,47 +76,35 @@ Add to the appropriate settings file:
 }
 ```
 
-**Global** (`~/.claude/settings.json`):
+**Global** (`~/.claude/settings.json`): the same block, with the command `python "<absolute path to ~/.claude/hooks/block-dangerous-git.py>"` (use the absolute path; do not rely on `~` expanding).
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/block-dangerous-git.sh"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-If the settings file already exists, merge the hook into the existing `hooks.PreToolUse` array — don't overwrite other settings. Note that the kit ships with **no hooks** by default, so on a fresh kit this adds a `hooks` block that wasn't there before.
+If the settings file already exists, merge the hook into the existing `hooks.PreToolUse` array. Do not overwrite other settings. Note that the kit ships with **no hooks** by default, so on a fresh kit this adds a `hooks` block that was not there before. Confirm the file still parses afterwards (`python -c "import json; json.load(open('<file>'))"`).
 
 ### 4. Ask about customization
 
-Ask if the user wants to add or remove any patterns from the blocked list. Edit the copied script accordingly.
+Ask whether the user wants to add or remove any patterns. Edit the copied script accordingly, then re-run the self-test.
 
 ### 5. Verify
 
-Run a quick test:
+Run the self-test; it must end with `failures 0`:
 
 ```bash
-echo '{"tool_input":{"command":"git push origin main"}}' | <path-to-script>
+python <hooks dir>/test_block_dangerous_git.py
 ```
 
-Should exit with code 2 and print a BLOCKED message to stderr.
+Then probe the live hook once with a harmless command. `git push --dry-run` is blocked under every policy and does nothing if the hook turns out not to be active:
+
+```bash
+git push --dry-run
+```
+
+You should get a `BLOCKED:` message. If the command runs instead, the hook is not active in this session: settings may need a restart or `/hooks` review to take effect, so tell the user rather than assuming it works. (This checks the main session only. Whether the hook also fires inside subagents has not been verified in the kit.)
 
 ### 6. Tell the user exactly what changed
 
-**Always report the settings change explicitly** — the user must know their permissions were altered. State plainly:
+**Always report the settings change explicitly**: the user must know their permissions were altered. State plainly:
 
 - **Which file** was edited (`.claude/settings.json` for this project, or `~/.claude/settings.json` globally).
-- **What was added** — a `PreToolUse` Bash hook pointing at `block-dangerous-git.sh`.
-- **The exact list of git commands now hard-blocked** (from "What Gets Blocked" above, plus any the user customized).
-- **How to undo it** — remove the hook entry from that settings file and delete `hooks/block-dangerous-git.sh`.
+- **What was added**: a `PreToolUse` hook on `Bash|PowerShell` pointing at `block-dangerous-git.py`, plus the two scripts copied into `hooks/`.
+- **The commit policy chosen** and the exact list of git commands now hard-blocked (from "What Gets Blocked" above, plus any customization).
+- **How to undo it**: remove the hook entry from that settings file and delete `hooks/block-dangerous-git.py` and `hooks/test_block_dangerous_git.py`.
