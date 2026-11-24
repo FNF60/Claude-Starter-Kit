@@ -2,6 +2,45 @@
 
 The kit's own decision record: what changed, why, and the options not taken. Dated entries, newest first. A project that installs the kit keeps its own decisions in its plan registries, ADRs or handoffs — not here.
 
+## 2026-11-24 — Dispatch mode verified in use; four fixes carried back
+
+The 2026-10-27 entry left dispatch mode "not verified in the kit: an end-to-end dispatch run". It has since run a whole build in its source project (a Python + React greenfield app). That project's copy grew fixes the kit never got, so the copy that ran is newer than the kit's. The owner chose to port them now rather than wait for the legacy Java project's dispatch version announced on 2026-11-21 (owner, 2026-11-24: "Port now"). *Not taken:* record the evidence only and port later; wait and do both projects in one pass. That project's version merges on top of this one when it is done.
+
+**Evidence from the source project** (saved ticket and dispatcher transcripts, 2026-10-28 to 2026-11-12):
+
+| Measure | Result |
+|---|---|
+| Tickets run in dispatch mode | 47, over 10+ dispatcher sessions |
+| Tickets that ran in two or more agent parts (rotation) | about 22; every hand-over resumed cleanly |
+| `BLOCKED` reports, or an agent failing on a ticket | 0 |
+| Builder never reviewing its own work | held: a dispatcher `/code-review` round on most risk-surface tickets |
+| Ratifications written when made | held: one memory file per ticket |
+| Stage-only | held: the owner asked the dispatcher to commit from a phone; the settings deny list refused, and the dispatcher did not work around it |
+| Dispatcher mistakes caught by the owner | 1: a ticket off the handoff's critical path was skipped inside its milestone |
+| Agent size (`subagent_tokens`) | before the budget rule, one agent ended at ≈422K; after it, the four largest recorded phases ended at 333K, 340K, 352K and 376K, none past the ≈400K rotation point |
+
+**Fixes carried back:**
+- **A ticket-agent's context budget** (owner, 2026-10-30, after the ≈422K agent: quality drops before the window fills and nothing bound agents to the 40 % rule). Two checks, both chosen: the agent stops at a safe point near the rotation point, leaves its work unstaged, writes a same-ticket handoff and returns the new status `ROTATE`; the dispatcher reads `subagent_tokens` before every resume and sends "Rotate" above about 300K. A fresh agent with the same description continues as "part <n>", so `save-agent` writes all parts into one transcript. *Not taken:* the dispatcher check only; the agent self-check only. Limit, now written down: the dispatcher check runs only between phases, so a long phase can finish past 300K (four did); the gap to 400K is the margin.
+- **`/code-review` includes untracked files** at `REVIEW_NEEDED`: the agent has not staged yet, so a review of `HEAD` alone missed new files.
+- **The whole-milestone check** (new; the rule was in the source project's memory only). Before each pass the dispatcher lists every open ticket of the current milestone whose dependencies are met, and asks when the handoff's pick would leave one behind. The skipped ticket left two commits without an issue number.
+- **The dispatcher re-runs the whole Quality Bar** (new). It re-ran only the tests and took the agent's word for lint and format, and the transcripts say so repeatedly, against the skill's own "agent reports are claims" rule. It now runs every Quality Bar command, may leave a slow check (end-to-end, live calls) to the agent when the ticket did not touch that area, and the hand-over splits "run by me" from "reported by the agent".
+- Touched: `.claude/agents/ticket-agent.md`, `.claude/skills/next-ticket/SKILL.md`, `WORKFLOW.md` §4.1 (diagram, "Who does what", the budget paragraph) and §8, `docs/workflow-overview.html` section 3.
+
+**The `git-guardrails` hook in a second project** (the same day, the source project took the 2026-11-21 hook, stage-only, `Bash|PowerShell`; copied by hand from the skill, not through `install.py`):
+- **Verified there:** the self-test (`failures 0`), the settings file still parsing, and a live block in the main session of `git -C . branch -D …`, a form the deny list cannot catch.
+- **The skill's probe was wrong for stage-only projects, now fixed.** Step 5 said to probe with `git push --dry-run`. That project denies `git push` in its settings, and the permission check refused the command before the hook ran, so the probe proved nothing. The probe is now `git -C . branch -D guardrail-probe-does-not-exist`: no permission rule matches it, it does nothing when the hook is off, and it tests the `-C` parsing. *Not taken:* `git -C . push --dry-run` (contacts the remote if the hook is off).
+- **`.gitignore` added to the kit** (`__pycache__/`, `*.pyc`): running the self-test leaves bytecode next to the scripts. `install.py` copies a fixed file list, so the bytecode never reached a project.
+- Touched: `.claude/skills/git-guardrails/SKILL.md` (step 5), `.gitignore` (new).
+
+**Still not verified:**
+- **This kit copy, from a clean install:** `install.py` into an empty repo, a new session, `/next-ticket` on one small ticket (the agent file loads, the brief and report formats hold, `save-agent` finds the transcript).
+- **Guards inside subagents:** that a ticket-agent is refused `git commit` by the deny list and by the `git-guardrails` hook. Only the dispatcher has been seen refused.
+- **The paths never taken:** "go manual" in the middle of a run, and "an agent fails twice, offer manual mode".
+- **A second project:** one project and one model family so far.
+- **The two new fixes** have not run yet.
+- **The overview page in a browser:** its diagrams were never opened after the 2026-10-27 change, and section 3's diagram changed again here.
+- **The hook through a fresh `install.py` + `/git-guardrails`** (still open from 2026-11-21; the second project copied it by hand).
+
 ## 2026-11-21 — Two generic fixes carried back from the first long-running project
 
 Came from a legacy Java project that ran on the kit for a month while it refactored and added rules from a spreadsheet. Only the changes that are not specific to that project were carried back; the owner chose the scope (2026-11-21: "update the kit with some of the improvements made here, provided they are generic rather than specific to [the project]"). Dispatch mode changes wait: the project builds its plan-parameter version first and the kit gets it once that project's extraction is done.

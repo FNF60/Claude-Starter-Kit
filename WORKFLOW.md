@@ -103,7 +103,7 @@ The lifecycle above runs in one of two modes. Both keep the rules that matter: o
 ```mermaid
 flowchart TD
     A([Dispatcher session: /next-ticket]) --> B[Read the live handoff:<br/>next ticket]
-    B --> C{Deps met, not blocked<br/>on the owner, git clean?}
+    B --> C{Deps met, not blocked<br/>on the owner, git clean,<br/>no milestone ticket skipped?}
     C -- no --> X([Stop and tell the owner why])
     C -- yes --> D[Start a fresh ticket-agent<br/>with the handoff as its brief]
     D --> E[Phase 1: plan, no writes.<br/>Returns plan + questions]
@@ -113,7 +113,8 @@ flowchart TD
     H -- yes --> I[Dispatcher runs /code-review.<br/>Agent fixes the findings]
     I --> J
     H -- no --> J[Agent stages, writes the next<br/>handoff, proposes the message]
-    J --> T[Dispatcher saves the agent's<br/>transcript and stages it]
+    J --> V[Dispatcher re-runs the<br/>Quality Bar itself]
+    V --> T[Dispatcher saves the agent's<br/>transcript and stages it]
     T --> K[Owner commits and pushes,<br/>replies next]
     K --> L[Dispatcher checks git:<br/>new commit, nothing staged]
     L --> B
@@ -125,7 +126,13 @@ flowchart TD
 - through the handoff's `Mode:` line (`manual | dispatch`), which every handoff carries; a session that opens from a `Mode: dispatch` handoff runs `/next-ticket`, and one that finds no mode asks;
 - by asking — "switch to dispatch" runs `/next-ticket`; "go manual" makes the dispatcher set the live handoff to `Mode: manual` and stop.
 
-**Who does what in dispatch mode.** The `ticket-agent` reads, plans, builds, verifies, stages and writes the case-2 handoff; it cannot talk to the owner, so its questions come back in its report with each alternative explained. The dispatcher never reads code or edits project files: it relays questions (`AskUserQuestion`, explanations inside the options), writes ratifications to auto-memory the moment they are made, runs `/code-review` on risk-surface tickets so the builder never reviews itself, and checks `git status` / `git log` and the tests before handing over. Agent reports are claims; git and the test run are the record.
+**Who does what in dispatch mode.** The `ticket-agent` reads, plans, builds, verifies, stages and writes the case-2 handoff; it cannot talk to the owner, so its questions come back in its report with each alternative explained. The dispatcher never reads code or edits project files: it relays questions (`AskUserQuestion`, explanations inside the options), writes ratifications to auto-memory the moment they are made, runs `/code-review` on risk-surface tickets so the builder never reviews itself, checks `git status` / `git log`, and re-runs the whole Quality Bar of `CLAUDE.md` (not only the tests) before handing over, saying which results it ran and which it took from the agent. Agent reports are claims; git and the dispatcher's own run are the record. Before each pass it lists every open ticket of the current milestone whose dependencies are met, so a ticket off the handoff's critical path is not skipped; when the handoff's pick would leave one behind, it asks the owner.
+
+**A ticket-agent's context budget.** The rotation point (§5) binds ticket-agents too, through two checks:
+- **The agent checks itself.** Near the rotation point, mid-ticket, it stops at a safe point, leaves its work unstaged in the tree, writes a same-ticket handoff and returns `ROTATE`.
+- **The dispatcher checks before every resume.** It reads the agent's `subagent_tokens` from the completion notification. Above about 300K, it sends "Rotate" instead of the next phase.
+
+Either way the next phase goes to a fresh `ticket-agent` with the same description, started from that handoff, and the runs are saved in one transcript. The dispatcher's check runs only between phases, so a long phase can finish past 300K; that margin is why the threshold sits below the rotation point.
 
 **Transcripts in both modes.** Every finished ticket leaves `docs/Supplementary AI md files/Conversations/<date>-<ticket id> implementation.md`, staged with the ticket so it lands in the same commit.
 - **Manual:** the session saves itself after `/handoff`. A ticket that runs into a second session saves `… implementation part <n>`.
@@ -229,7 +236,7 @@ The kit's default and the shape this template was refined under is **stage-only*
 
 Tickets are not strictly sequential; the `Dep:` fields define lanes. Rules for concurrent agent sessions:
 
-- **One ticket per session or `ticket-agent`.** Never two agents on the same ticket. The dispatcher (§4.1) runs tickets one at a time; parallel lanes are manual sessions in worktrees.
+- **One ticket per session or `ticket-agent`.** Never two agents on the same ticket at once (a rotated ticket's parts run in sequence, §4.1). The dispatcher (§4.1) runs tickets one at a time; parallel lanes are manual sessions in worktrees.
 - Parallel sessions that *write files* use separate git worktrees.
 - Work lands in dependency order; a later lane rebases onto the earlier lane's pushed work, never the reverse.
 - **Schema migrations (or any other serialization point) are never written in two sessions at once.**

@@ -185,7 +185,7 @@ flowchart TD
 <pre class="mermaid">
 flowchart TD
     A([Dispatcher session: /next-ticket]) --> B[Read the live handoff:&lt;br/&gt;next ticket]
-    B --> C{Deps met, not blocked&lt;br/&gt;on the owner, git clean?}
+    B --> C{Deps met, not blocked&lt;br/&gt;on the owner, git clean,&lt;br/&gt;no milestone ticket skipped?}
     C -- no --> X([Stop and tell the owner why])
     C -- yes --> D[Start a fresh ticket-agent&lt;br/&gt;with the handoff as its brief]
     D --> E[Phase 1: plan, no writes.&lt;br/&gt;Returns plan + questions]
@@ -195,7 +195,8 @@ flowchart TD
     H -- yes --> I[Dispatcher runs /code-review.&lt;br/&gt;Agent fixes the findings]
     I --> J
     H -- no --> J[Agent stages, writes the next&lt;br/&gt;handoff, proposes the message]
-    J --> T[Dispatcher saves the agent's&lt;br/&gt;transcript and stages it]
+    J --> V[Dispatcher re-runs the&lt;br/&gt;Quality Bar itself]
+    V --> T[Dispatcher saves the agent's&lt;br/&gt;transcript and stages it]
     T --> K[Owner commits and pushes,&lt;br/&gt;replies next]
     K --> L[Dispatcher checks git:&lt;br/&gt;new commit, nothing staged]
     L --> B
@@ -210,7 +211,7 @@ flowchart TD
     </div>
     <div class="cases">
       <div class="case"><h3><span class="tag">manual</span> one session per ticket</h3><p>The owner opens each session from the live handoff, exactly as in the lifecycle above. Best for exploratory work or a ticket that needs the owner in the loop throughout.</p></div>
-      <div class="case"><h3><span class="tag">dispatch</span> one session, an agent per ticket</h3><p><code>/next-ticket</code> relays each agent's plan and questions, runs <code>/code-review</code> on risk surfaces, and waits for the owner's commit and "next". Best for a run of well-specified tickets.</p></div>
+      <div class="case"><h3><span class="tag">dispatch</span> one session, an agent per ticket</h3><p><code>/next-ticket</code> relays each agent's plan and questions, runs <code>/code-review</code> on risk surfaces, re-runs the Quality Bar itself, and waits for the owner's commit and "next". An agent near the rotation point writes a same-ticket handoff and a fresh agent continues. Best for a run of well-specified tickets.</p></div>
       <div class="case none"><h3><span class="tag">stop</span> dispatch pauses</h3><p>On "stop", at a milestone, when the next ticket is blocked on the owner, after two agent failures, or at the rotation point; the handoff's <code>Mode:</code> line resumes it in a new session.</p></div>
     </div>
   </details>

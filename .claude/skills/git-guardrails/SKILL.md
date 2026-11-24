@@ -92,13 +92,15 @@ Run the self-test; it must end with `failures 0`:
 python <hooks dir>/test_block_dangerous_git.py
 ```
 
-Then probe the live hook once with a harmless command. `git push --dry-run` is blocked under every policy and does nothing if the hook turns out not to be active:
+Then probe the live hook once with a harmless command. Deleting a branch that does not exist is blocked under every policy, does nothing if the hook turns out not to be active, and the `-C` form also proves the hook reads past git's global options:
 
 ```bash
-git push --dry-run
+git -C . branch -D guardrail-probe-does-not-exist
 ```
 
-You should get a `BLOCKED:` message. If the command runs instead, the hook is not active in this session: settings may need a restart or `/hooks` review to take effect, so tell the user rather than assuming it works. (This checks the main session only. Whether the hook also fires inside subagents has not been verified in the kit.)
+Do not probe with `git push` or `git commit`. A permission rule refuses or prompts for those before the hook runs (a project that denies push in its settings refuses `git push --dry-run` outright), so the probe proves nothing about the hook. No permission rule matches the `-C` form, so it reaches the hook.
+
+You should get a `BLOCKED:` message from the hook. If the command runs instead (git answers that the branch was not found), the hook is not active in this session: settings may need a restart or `/hooks` review to take effect, so tell the user rather than assuming it works. (This checks the main session only. Whether the hook also fires inside subagents has not been verified in the kit.)
 
 ### 6. Tell the user exactly what changed
 

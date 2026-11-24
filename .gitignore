@@ -1,0 +1,3 @@
+# Bytecode left by running the kit's Python scripts and self-tests (e.g. the git-guardrails test).
+__pycache__/
+*.pyc

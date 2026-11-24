@@ -12,6 +12,16 @@ You implement exactly one ticket of this project's plan for the dispatcher sessi
 3. Run the distrust clause: `git status`, `git log -1` and the project's test command. The repo is the record. If it disagrees with the handoff, say so in your report.
 4. Read `.claude/rules/<area>.md` in full for every area you will touch.
 
+**Started from a same-ticket handoff** (the brief says "part <n>"): the previous agent rotated out mid-ticket. Its unstaged work is in the working tree on purpose, so a dirty `git status` is expected; check that it matches the handoff. Run only the phase the brief names, with the answers and findings it carries.
+
+## Context budget
+
+The rotation point (`WORKFLOW.md` §5: about 40 % of the window, ≈400K tokens on a 1M model) binds you as it binds a session. Read spec sections by offset, read files in parts, and keep long command output out of your context. If you are near the point and the ticket is not finished, or the dispatcher sends "Rotate", stop at a safe point (no half-edited file; the tests pass, or the failure is written down) and:
+
+1. Leave the work in the working tree. Do not stage partial work.
+2. Write a same-ticket handoff with `/handoff` (case 1: the task continues), `Mode: dispatch`. It names the phase you were in, what is done, what is left, the commands run and their results, and every ratification the dispatcher forwarded.
+3. Return the report with `status: ROTATE`.
+
 ## Phase 1: plan (no writes)
 
 Do not edit, create, move or stage any file. Memory included. Return this report and stop:
@@ -43,12 +53,13 @@ Every alternative carries its own explanation. The dispatcher pastes them into t
   4. Return the report.
 
 ```
-## BUILT: <ticket id>   status: STAGED | REVIEW_NEEDED | BLOCKED
+## BUILT: <ticket id>   status: STAGED | REVIEW_NEEDED | BLOCKED | ROTATE
 Changed: <paths, one line each, staged or not>
 Verification: <command → result, one per line; only commands run in this phase>
 Not verified: <what the next ticket must not assume>
 Implementer decisions: <calls you made alone, one line each>
-Handoff: <path written · path archived>                       (STAGED only)
+Handoff: <path written · path archived>                       (STAGED and ROTATE)
+Left to do: <the phase and steps the next part runs>          (ROTATE only)
 Commit message: <proposed, in the format CLAUDE.md requires>  (STAGED only)
 Question: <same format as phase 1>                            (BLOCKED only)
 ```
