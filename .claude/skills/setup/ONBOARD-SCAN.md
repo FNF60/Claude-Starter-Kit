@@ -144,6 +144,8 @@ Auto-add these to a Don't Touch list (the user can prune):
 - Vendored copies — directories named `third_party/`, `external/`, `lib/vendor/`
 - Database migration files older than 30 days (changing them is almost always a bug)
 
+**Leave-alone candidates** (a separate list: files the owner keeps changed locally, which agents never stage and dispatch mode's clean-tree check ignores, `WORKFLOW.md` §4.1). Run `git status --short`: every modified, deleted or untracked path present before any agent has worked here is a candidate (a local config, an installer script edited by hand, exports, office lock files `~$*`). Do not guess beyond that list; the owner confirms in Round 2.
+
 ### 2g. Process & ownership detection
 
 | File | What we learn |
@@ -228,7 +230,13 @@ Q2: "Anti-patterns I mined from git history — confirm any that are real?" (hea
 Q3: "Don't-touch list — anything to remove?" (header: "Off-limits", multiSelect)
   - [candidates from 2f]
   - "All correct"
+
+Q4: "These files are changed in your tree right now. Which are standing local changes that agents should never stage and dispatch should ignore?" (header: "Leave alone", multiSelect)
+  - [leave-alone candidates from 2f, up to 3, each with "(modified|untracked|deleted)"]
+  - "None — they're work in progress; commit or discard them first"
 ```
+
+Skip Q4 when `git status --short` is empty. Write the chosen paths (or `(none)`) into CLAUDE.md's **Leave-alone files** line under "Don't Touch"; more than three candidates → list them in the question text and ask for the keepers as free text.
 
 **Hard rule: never ask the user something the scan already answered.** If `package.json` says `"test": "jest"`, don't ask "what test framework do you use." Just record it.
 
@@ -244,7 +252,7 @@ For each section, if the data is missing, **leave a one-line prompt explaining w
 
 **Sections that are process, not scan output — always present, never dropped:** "Area conventions" (start with one pin per detected risk surface, each naming a `.claude/rules/<area>.md` to be written when the area's rules exceed a few lines), "Commit & Workflow Policy" with the **Handoffs** two-case bullet and the "prompt the owner for the commit message" sentence, the clarification instruction as the first "Output Preferences" bullet, and "Compact Instructions" verbatim from the template. Keep the whole file **under ~200 lines**: when a discovered section would push it over, write the detail into a rules file with `paths:` frontmatter and leave a one-line pin.
 
-**`--refresh` on a CLAUDE.md written by an earlier kit:** diff its headings against the template. Add every missing process section (above) in template wording; never rewrite a `[declared]` section. If a section runs long (an area's bullets past ~10 lines), propose — do not perform — the move into `.claude/rules/<area>.md`, listing the bullets and the `paths:` globs; the owner confirms. Scaffold `docs/handoff/archive/` and `.claude/rules/` if absent. Report any `/wrap` references left in the file and replace them with `/handoff`.
+**`--refresh` on a CLAUDE.md written by an earlier kit:** diff its headings against the template. Add every missing process section (above) in template wording; never rewrite a `[declared]` section. If a section runs long (an area's bullets past ~10 lines), propose — do not perform — the move into `.claude/rules/<area>.md`, listing the bullets and the `paths:` globs; the owner confirms. Scaffold `docs/handoff/archive/` and `.claude/rules/` if absent. Report any `/wrap` references left in the file and replace them with `/handoff`. If "Don't Touch" has no **Leave-alone files** line, add it and ask Round 2's Q4 to fill it (2026-11-24 kit addition, used by dispatch mode's clean-tree check). If the commit policy bullet lacks the name-based staging sentence, add it in template wording.
 
 ---
 
@@ -258,7 +266,7 @@ If `.claude/settings.json` exists with non-kit content, **merge**:
    - Lint/format/type-check commands -> allow
    - Build/dev commands -> allow
    - Detected dangerous commands (e.g., `npm publish`, deploy scripts) -> deny or ask
-3. The kit ships **no hooks**. If the user wants hard git-command blocking, point them at the `git-guardrails` skill.
+3. The kit ships **no hooks**. If the user wants hard git-command blocking, point them at the `git-guardrails` skill (it also asks whether the hook alone should guard commit/push, step 3b).
 4. Save. Diff-print what changed.
 
 ---

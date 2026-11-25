@@ -7,8 +7,6 @@
       "Read(**)",
       "Read(//**)",
       "Edit(**)",
-      "Write(**)",
-      "MultiEdit(**)",
       "Bash(ls *)",
       "Bash(cat *)",
       "Bash(head *)",
@@ -336,6 +334,14 @@
       "PowerShell(cargo publish *)"
     ],
     "deny": [
+      "Bash(git add -A*)",
+      "Bash(git add --all*)",
+      "Bash(git add .)",
+      "Bash(git add -u*)",
+      "PowerShell(git add -A*)",
+      "PowerShell(git add --all*)",
+      "PowerShell(git add .)",
+      "PowerShell(git add -u*)",
       "Bash(rm -rf /)",
       "Bash(rm -rf /*)",
       "Bash(rm -rf ~)",

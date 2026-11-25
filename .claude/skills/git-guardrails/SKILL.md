@@ -28,7 +28,7 @@ When blocked, Claude sees a message telling it the owner has prevented the comma
 
 ## How the script decides
 
-It does not search the command text for "git push". It splits the command into separate commands (on `;`, `&`, `|` and newlines, outside quotes), finds the `git` call in each, skips git's global options (`-C <dir>`, `-c key=value`, `--no-pager`), and checks the real subcommand. So `git -C repo push` is caught (a text search for "git push" misses it), a commit message or `grep 'git push'` is not mistaken for a push, and `bash -c "git push"` / `powershell -Command git push` are looked into. It is a guardrail against accidents, not a security boundary: `eval`, a shell variable holding the subcommand, aliases, and scripts that run git internally are not seen.
+It does not search the command text for "git push". It splits the command into separate commands (on `;`, `&`, `|` and newlines, outside quotes), following the quoting rules of the shell that runs it: bash escapes with a backslash, PowerShell with a backtick (where `\"` really does end a string), and a nested `bash -c` / `powershell -Command` / `cmd /c` gets its own shell's rules. It then finds the `git` call in each, skips git's global options (`-C <dir>`, `-c key=value`, `--no-pager`), and checks the real subcommand. So `git -C repo push` is caught (a text search for "git push" misses it), a commit message or `grep 'git push'` is not mistaken for a push, and `bash -c "git push"` / `powershell -Command git push` are looked into. It is a guardrail against accidents, not a security boundary: `eval`, a shell variable holding the subcommand, aliases, and scripts that run git internally are not seen.
 
 ## Steps
 
@@ -80,6 +80,13 @@ The matcher covers **both** shell tools, because a command run through the Power
 
 If the settings file already exists, merge the hook into the existing `hooks.PreToolUse` array. Do not overwrite other settings. Note that the kit ships with **no hooks** by default, so on a fresh kit this adds a `hooks` block that was not there before. Confirm the file still parses afterwards (`python -c "import json; json.load(open('<file>'))"`).
 
+### 3b. Ask: hook alone, or hook plus permission rules?
+
+The kit's settings **ask** before `git commit` / `git push`. With the hook installed, ask the user which guard they want for the commands the hook blocks:
+
+- **Hook plus the permission rules (default):** two layers. But a permission rule refuses or prompts before the hook runs, so you can never see whether the hook itself works, in the main session or inside subagents.
+- **The hook alone:** remove `git commit` / `git push` (both tools) from `ask` and `deny`, so the hook is the only thing that refuses them. One layer, but observable: a probe with `git commit` (nothing staged, so it is harmless either way) shows the hook firing, including inside a dispatch `ticket-agent`. Worth it when the project runs dispatch mode and wants that evidence.
+
 ### 4. Ask about customization
 
 Ask whether the user wants to add or remove any patterns. Edit the copied script accordingly, then re-run the self-test.
@@ -100,7 +107,7 @@ git -C . branch -D guardrail-probe-does-not-exist
 
 Do not probe with `git push` or `git commit`. A permission rule refuses or prompts for those before the hook runs (a project that denies push in its settings refuses `git push --dry-run` outright), so the probe proves nothing about the hook. No permission rule matches the `-C` form, so it reaches the hook.
 
-You should get a `BLOCKED:` message from the hook. If the command runs instead (git answers that the branch was not found), the hook is not active in this session: settings may need a restart or `/hooks` review to take effect, so tell the user rather than assuming it works. (This checks the main session only. Whether the hook also fires inside subagents has not been verified in the kit.)
+You should get a `BLOCKED:` message from the hook. If the command runs instead (git answers that the branch was not found), the hook is not active in this session: settings may need a restart or `/hooks` review to take effect, so tell the user rather than assuming it works. (This checks the main session only. Inside a subagent the hook has been seen blocking `git push --dry-run`, in a project that chose the hook alone, step 3b.)
 
 ### 6. Tell the user exactly what changed
 

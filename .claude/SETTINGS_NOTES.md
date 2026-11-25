@@ -13,7 +13,8 @@ Order is **deny → ask → allow → defaultMode**, first match wins. A trailin
 
 - `allow` — read-only/inspection shell, package managers, test/lint/build runners, git read + `git add`, and a doc-domain WebFetch allowlist.
 - `ask` — reversible-but-consequential actions you want to eyeball: `git commit`/`push`/`reset`/`checkout`/`rebase`/`merge`, `rm`/`mv`/`chmod`, `docker run`/`exec`/`rm`, and publishes.
-- `deny` — catastrophic or exfiltration commands (`rm -rf /`, `dd`, `curl … | sh`) and reads of common secret locations (`.env`, `.ssh`, `*.pem`, cloud creds).
+- `deny` — catastrophic or exfiltration commands (`rm -rf /`, `dd`, `curl … | sh`), reads of common secret locations (`.env`, `.ssh`, `*.pem`, cloud creds), and whole-tree staging (`git add -A` / `--all` / `.` / `-u`: agents stage paths by name).
+- File tools: one `Edit(**)` rule covers Edit, Write and MultiEdit; separate `Write(**)` / `MultiEdit(**)` rules add nothing.
 
 ## 2. Merge, don't overwrite
 

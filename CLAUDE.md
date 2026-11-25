@@ -59,6 +59,8 @@ If one is missing, leave the line as `# <name>: (none configured)` — skills sk
 - Migrations older than 30 days (changing them is almost always a bug)
 - Vendored third-party code under `third_party/`, `external/`, `lib/vendor/`
 
+**Leave-alone files** (dispatch mode, `WORKFLOW.md` §4.1): the owner's standing local changes that agents never stage and the dispatcher's clean-tree check ignores (e.g. a local config, a scratch export). `(none)` by default.
+
 ## Risk Surfaces
 
 **[discovered + declared]** Sensitive areas where `/code-review` applies extra caution. **A change here is reviewed before it is staged for push** (`WORKFLOW.md` §7).
@@ -117,7 +119,7 @@ If one is missing, leave the line as `# <name>: (none configured)` — skills sk
 
 **[declared]** How changes flow from working tree to the default branch. Mechanics in `WORKFLOW.md`.
 
-- **Commit policy:** (stage-only | auto-commit | draft-PR | never-commit) — set during `/setup`. **Kit default: stage-only — agents stage, the human commits.** Even a commit message supplied earlier is not commit authorization. **When a commit is warranted, prompt the owner with a proposed message** rather than composing one unprompted. Messages: short prose, a subject plus at most a line or two; reference the issue when one exists.
+- **Commit policy:** (stage-only | auto-commit | draft-PR | never-commit) — set during `/setup`. **Kit default: stage-only — agents stage, the human commits.** Even a commit message supplied earlier is not commit authorization. **Agents stage named paths only**, never `git add -A` / `--all` / `.` / `-u` (the settings deny them), so the owner's unrelated changes never ride along. **When a commit is warranted, prompt the owner with a proposed message** rather than composing one unprompted. Messages: short prose, a subject plus at most a line or two; reference the issue when one exists.
 - **Default branch:** (auto-detected) · **Branch protection:** (block direct pushes | warn-and-confirm | none) · **Branching:** short-lived branches only for experimental work, named `<issue-id>-<kebab-description>`.
 - **Issue tracker:** (where status lives; how an agent reads the real issue id — **never infer an id from a numbering pattern**, a wrong `Closes #n` auto-closes an unrelated issue).
 - **Handoffs (two cases only):** a handoff is written unprompted **(1)** when the same task continues in a new session because this one has filled up (rotation at ~40 % of the window), or **(2)** when the task is done and a clear next ticket exists. A finished topic with no successor writes none: archive the consumed handoff to `docs/handoff/archive/`, put loose notes in auto-memory, stop. Invoke `/handoff`; the shape is `.claude/skills/handoff/template.md`, never the previous handoff; say in the recap that you wrote it. **A ratification the owner makes mid-ticket is written to the handoff draft or to auto-memory at that moment, never held for session end.** **Two modes** (`WORKFLOW.md` §4.1): *manual*, one ticket per session as above; *dispatch*, one session runs `/next-ticket` and gives each ticket to a fresh `ticket-agent`. The owner picks (close of `/plan-interview`, the handoff's `Mode:` line, or by asking) and can switch at any time. **Every finished ticket saves its transcript** as `/save-conversation "<ticket id> implementation"`, staged with the ticket (in dispatch mode the dispatcher saves the ticket-agent's transcript).

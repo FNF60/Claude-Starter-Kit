@@ -36,6 +36,9 @@ KIT_FILES = [
     # and the handoff archive. .gitkeep so git tracks the empty directories.
     ".claude/rules/.gitkeep",
     "docs/handoff/archive/.gitkeep",
+    # Transcripts (/save-conversation, dispatch's save-agent): the script refuses to write
+    # when this folder is missing, so a fresh install failed at the first ticket close.
+    "docs/Supplementary AI md files/Conversations/.gitkeep",
     # Core workflow skills
     ".claude/skills/setup/skill.md",
     ".claude/skills/setup/ONBOARD-SCAN.md",
@@ -44,6 +47,7 @@ KIT_FILES = [
     ".claude/skills/save-conversation/SKILL.md",
     # Dispatch mode (WORKFLOW.md §4.1): the dispatcher skill and the agent it starts per ticket
     ".claude/skills/next-ticket/SKILL.md",
+    ".claude/skills/next-ticket/dispatch-log-template.md",
     ".claude/agents/ticket-agent.md",
     # Engineering skill set
     ".claude/skills/plan-interview/SKILL.md",

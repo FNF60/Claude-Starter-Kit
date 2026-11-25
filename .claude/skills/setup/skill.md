@@ -149,11 +149,11 @@ Q4: "Session memory — how much should I remember?" (header: "Memory")
 
 After questionnaires, prep the repo:
 
-1. **Fill CLAUDE.md** with selected stack, commit policy, communication style. The process sections stay in template wording regardless of answers: "Area conventions" (empty list with the one-line rule), "Commit & Workflow Policy" with the **Handoffs** two-case bullet and "prompt the owner for the commit message" under stage-only, the clarification instruction as the first "Output Preferences" bullet, and "Compact Instructions". Keep the file under ~200 lines.
+1. **Fill CLAUDE.md** with selected stack, commit policy, communication style. The process sections stay in template wording regardless of answers: "Area conventions" (empty list with the one-line rule), "Commit & Workflow Policy" with the **Handoffs** two-case bullet and "prompt the owner for the commit message" under stage-only, the clarification instruction as the first "Output Preferences" bullet, and "Compact Instructions". Under "Don't Touch", write **Leave-alone files: `(none)`**: a fresh repo has no standing local changes; the owner adds them later if dispatch mode's clean-tree check (`WORKFLOW.md` §4.1) keeps stopping on a file they always keep modified. Keep the file under ~200 lines.
 2. **Pre-populate the project commands** in CLAUDE.md "Quick Start" / "Existing Tooling" based on the chosen stack (e.g., `npm test` for Node, `pytest` for Python). Mark them as defaults the user should adjust once they pick concrete tools.
 3. **Configure permissions** — add stack-appropriate `Bash(...)` / `PowerShell(...)` allow entries. Leave `autoCompactWindow` as shipped unless the user works on a model with a window under 1M (then ~half that window; `.claude/SETTINGS_NOTES.md` §8).
 4. **Set default branch** in CLAUDE.md to `main` (greenfield default; user can change).
-5. **Scaffold the workflow files** if `install.py` did not: `.claude/rules/.gitkeep`, `docs/handoff/archive/.gitkeep`; confirm `WORKFLOW.md` exists and fill its `[declared]` lines (source-of-truth chain, commit policy, branching) from the answers above.
+5. **Scaffold the workflow files** if `install.py` did not: `.claude/rules/.gitkeep`, `docs/handoff/archive/.gitkeep`, `docs/Supplementary AI md files/Conversations/.gitkeep`; confirm `WORKFLOW.md` exists and fill its `[declared]` lines (source-of-truth chain, commit policy, branching) from the answers above.
 
 6. **Report:**
 
@@ -179,7 +179,7 @@ After questionnaires, prep the repo:
 AskUserQuestion:
 
 Q: "Want any of these extras?" (header: "Extras", multiSelect: true)
-  - "Hard git guardrails — block push/reset --hard/clean -f/branch -D (and commit/rebase when stage-only) via a hook (runs the /git-guardrails skill)"
+  - "Hard git guardrails — block push/reset --hard/clean -f/branch -D (and commit/rebase when stage-only) via a hook (runs the /git-guardrails skill, which also asks whether the hook alone guards commit/push, so its firing inside dispatch agents can be seen)"
   - "Obsidian vault integration — let Claude read/write your notes vault (/obsidian-vault)"
   - "Session transcripts — remember /save-conversation for a verbatim record"
   - "None — the basics are fine"

@@ -80,26 +80,43 @@ ALLOW = [
     "Get-Content notes.txt | Select-String 'git push'",
 ]
 
+# Quoting that depends on the shell running the command: (shell, command, expect_blocked).
+# Bash escapes a quote with a backslash; PowerShell with a backtick, and there "\" is plain text.
+SHELL_CASES = [
+    ("bash", r'grep -n "a\|\"x\|git push" f.txt', False),  # escaped quote kept the string open
+    ("bash", r'echo "say \"hi\"" ; git push', True),
+    ("bash", r'echo a\;git push', False),                   # escaped ';' is not a separator
+    ("bash", r'bash -c "echo \"x\"; git push"', True),
+    ("powershell", r'Write-Output "C:\dir\"; git push', True),  # \" does not escape in PowerShell
+    ("powershell", 'Write-Output "a`"; git push"', False),      # `" does
+    ("powershell", r'Select-String -Pattern "x\" | git push"', True),
+    ("bash", 'cmd /c git push', True),
+    ("bash", 'cmd.exe /c "git commit -m x"', True),
+]
+
 failures = 0
 
 
-def check(command, expect_blocked, policy):
+def check(command, expect_blocked, policy, shell="bash"):
     global failures
     hook.COMMIT_POLICY = policy
-    blocked = hook.check_command(command) is not None
+    blocked = hook.check_command(command, 0, shell) is not None
     if blocked != expect_blocked:
         failures += 1
-        print("FAIL [%s] expected %s: %r" % (policy, "BLOCK" if expect_blocked else "ALLOW", command))
+        print("FAIL [%s/%s] expected %s: %r" % (policy, shell, "BLOCK" if expect_blocked else "ALLOW", command))
 
 
 for policy in ("stage-only", "auto-commit"):
-    for c in ALWAYS_BLOCK:
-        check(c, True, policy)
-    for c in ALLOW:
-        check(c, False, policy)
+    for shell in ("bash", "powershell"):
+        for c in ALWAYS_BLOCK:
+            check(c, True, policy, shell)
+        for c in ALLOW:
+            check(c, False, policy, shell)
 for c in STAGE_ONLY_BLOCK:
     check(c, True, "stage-only")
     check(c, False, "auto-commit")
+for shell, c, expected in SHELL_CASES:
+    check(c, expected, "stage-only", shell)
 
 # End to end through the real entry point (JSON on stdin, exit code), default policy.
 hook.COMMIT_POLICY = "stage-only"
@@ -118,6 +135,13 @@ if run(json.dumps({"tool_input": {"command": "git status"}})) != 0:
 if run("not json") != 0:
     failures += 1
     print("FAIL end-to-end: unreadable input must not block")
+ps_trap = 'Write-Output "C:\\dir\\"; git push'
+if run(json.dumps({"tool_name": "PowerShell", "tool_input": {"command": ps_trap}})) != 2:
+    failures += 1
+    print("FAIL end-to-end: PowerShell tool name did not switch to PowerShell quoting")
+if run(json.dumps({"tool_name": "Bash", "tool_input": {"command": r'grep "a\"x|git push" f'}})) != 0:
+    failures += 1
+    print("FAIL end-to-end: Bash escaped quote still a false positive")
 
-print("always-block %d, stage-only %d, allow %d, failures %d" % (len(ALWAYS_BLOCK), len(STAGE_ONLY_BLOCK), len(ALLOW), failures))
+print("always-block %d, stage-only %d, allow %d, shell %d, failures %d" % (len(ALWAYS_BLOCK), len(STAGE_ONLY_BLOCK), len(ALLOW), len(SHELL_CASES), failures))
 sys.exit(1 if failures else 0)

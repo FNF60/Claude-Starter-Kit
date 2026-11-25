@@ -39,6 +39,30 @@ commit → <branch policy>             ← HOW code lands
 
 The ticket line is the durable record. The handoff that closed the ticket is archived (§4); the plan line is what a reader finds a year later.
 
+### 2.1 The stage register (optional; what dispatch reads)
+
+A long plan run in dispatch mode (§4.1) gets a **stage register**: one block per stage, in dependency order, at the end of the plan, with fixed field names. The dispatcher reads only the register's notes and one stage block, by offset, so it never loads the whole plan; `/next-ticket <plan path> <stage or ticket id>` points it there. A plan without a register still dispatches from the live handoff.
+
+```
+### S2 <stage title>
+
+- ID: S2
+- Dep: <stages that must be done first>
+- Branch: <the branch the stage runs on; the owner creates it>
+- Status: not started | in progress | done <date>      (the dispatcher keeps this line)
+- Scope: In: … / Out: …
+- Spec: <pointers only, never copies>
+- Tests: PIN | PROOF | PIN then PROOF | none            (`/tdd`, pin-and-proof; none = docs, design, measurement)
+- Verify: <only what is specific to this stage; the Quality Bar lives in CLAUDE.md>
+- Done when: <checkable conditions>
+- Tickets:
+  - S2-1 <title>. <test kind>. Done when: … **Done <date>**: <what landed, ratifications with the options not taken, test counts>
+  - S2-2 …
+- Done: <filled by the agent that closes the stage's last ticket>
+```
+
+Optional fields a project may add: rulings to raise, suggested skills, coverage rows. A ticket is done when its line carries **Done <date>**. A stage id means its first undone ticket. Far-off stages may mark their tickets *provisional* and re-cut them when the stage starts. A ticket that turns out too big is split into lettered parts (`S2-3a`, `S2-3b`) when the owner approves the agent's `Fit:` proposal; the dispatcher edits the register.
+
 ## 3. The day-to-day loop
 
 1. Pick the next unblocked ticket from the board (deps met = unblocked). **One ticket per session** (manual mode) **or per `ticket-agent`** (dispatch mode, §4.1).
@@ -102,19 +126,19 @@ The lifecycle above runs in one of two modes. Both keep the rules that matter: o
 
 ```mermaid
 flowchart TD
-    A([Dispatcher session: /next-ticket]) --> B[Read the live handoff:<br/>next ticket]
-    B --> C{Deps met, not blocked<br/>on the owner, git clean,<br/>no milestone ticket skipped?}
+    A([Dispatcher session: /next-ticket]) --> B[Read the stage register<br/>or the live handoff:<br/>next ticket]
+    B --> C{Deps met, not blocked,<br/>right branch, tree clean outside<br/>the leave-alone list,<br/>no milestone ticket skipped?}
     C -- no --> X([Stop and tell the owner why])
     C -- yes --> D[Start a fresh ticket-agent<br/>with the handoff as its brief]
     D --> E[Phase 1: plan, no writes.<br/>Returns plan + questions]
-    E --> F[Dispatcher asks the owner.<br/>Ratifications written NOW]
+    E --> F[Dispatcher asks the owner,<br/>or splits the ticket on approval.<br/>Ratifications written NOW]
     F --> G[Phase 2: build and verify]
-    G --> H{Risk surface touched?}
-    H -- yes --> I[Dispatcher runs /code-review.<br/>Agent fixes the findings]
+    G --> H{Code ticket or<br/>risk surface?}
+    H -- yes --> I[Dispatcher runs /code-review,<br/>untracked files included.<br/>Agent fixes the findings]
     I --> J
     H -- no --> J[Agent stages, writes the next<br/>handoff, proposes the message]
     J --> V[Dispatcher re-runs the<br/>Quality Bar itself]
-    V --> T[Dispatcher saves the agent's<br/>transcript and stages it]
+    V --> T[Dispatcher saves the agent's<br/>transcript, stages it,<br/>logs the ticket]
     T --> K[Owner commits and pushes,<br/>replies next]
     K --> L[Dispatcher checks git:<br/>new commit, nothing staged]
     L --> B
@@ -126,7 +150,7 @@ flowchart TD
 - through the handoff's `Mode:` line (`manual | dispatch`), which every handoff carries; a session that opens from a `Mode: dispatch` handoff runs `/next-ticket`, and one that finds no mode asks;
 - by asking — "switch to dispatch" runs `/next-ticket`; "go manual" makes the dispatcher set the live handoff to `Mode: manual` and stop.
 
-**Who does what in dispatch mode.** The `ticket-agent` reads, plans, builds, verifies, stages and writes the case-2 handoff; it cannot talk to the owner, so its questions come back in its report with each alternative explained. The dispatcher never reads code or edits project files: it relays questions (`AskUserQuestion`, explanations inside the options), writes ratifications to auto-memory the moment they are made, runs `/code-review` on risk-surface tickets so the builder never reviews itself, checks `git status` / `git log`, and re-runs the whole Quality Bar of `CLAUDE.md` (not only the tests) before handing over, saying which results it ran and which it took from the agent. Agent reports are claims; git and the dispatcher's own run are the record. Before each pass it lists every open ticket of the current milestone whose dependencies are met, so a ticket off the handoff's critical path is not skipped; when the handoff's pick would leave one behind, it asks the owner.
+**Who does what in dispatch mode.** The `ticket-agent` reads, plans (including whether the ticket fits its budget, or a proposed split), builds, verifies, stages by name and writes the case-2 handoff; it cannot talk to the owner, so its questions come back in its report with each alternative explained. It does not run the test suite while it plans (the dispatcher runs the baseline meanwhile), stops with `BLOCKED` on any snapshot diff, and lists bugs it finds instead of fixing them. The dispatcher never reads code, and edits only a short named list of files (the register's `Status:` lines and approved splits, `docs/handoff/dispatch-log.md`, the handoff's `Mode:` line, `docs/kit-delta.md`): it picks each agent's model, relays questions (`AskUserQuestion`, explanations inside the options), writes ratifications to auto-memory the moment they are made, runs `/code-review` on every ticket whose test kind is not `none` and every risk-surface ticket, on the diff plus the untracked files, so the builder never reviews itself, checks `git status` / `git log`, and re-runs the whole Quality Bar of `CLAUDE.md` (not only the tests) before handing over, saying which results it ran and which it took from the agent. Agent reports are claims; git and the dispatcher's own run are the record. Before each pass it lists every open ticket of the current milestone whose dependencies are met, so a ticket off the handoff's critical path is not skipped; when the handoff's pick would leave one behind, it asks the owner.
 
 **A ticket-agent's context budget.** The rotation point (§5) binds ticket-agents too, through two checks:
 - **The agent checks itself.** Near the rotation point, mid-ticket, it stops at a safe point, leaves its work unstaged in the tree, writes a same-ticket handoff and returns `ROTATE`.
@@ -140,7 +164,9 @@ Either way the next phase goes to a fresh `ticket-agent` with the same descripti
 
 **Where dispatch stops.** The owner says stop; a milestone closes (ask before the next one); the next ticket is blocked on the owner or does not exist; an agent fails twice on one ticket (offer manual mode with the same handoff); or the dispatcher's own context reaches the rotation point (§5) — the owner opens a new session, and the live handoff's `Mode: dispatch` resumes the loop. The dispatcher writes no handoff of its own.
 
-**Models.** The `ticket-agent` inherits the dispatcher's model unless its frontmatter sets `model:`; the tiering in §9 applies to it like to any session.
+**Models.** The dispatcher picks each agent's model per ticket and tells the owner in one line: the mid tier for `Tests: none` tickets (docs, design, measurement), the top tier for anything touching code or a risk surface (§9). Without a pick, the `ticket-agent` inherits the dispatcher's model.
+
+**The dispatch log.** `docs/dispatch-log.md` (in `docs/`, because it is never consumed) gets one row per ticket: questions asked and how many the owner marks avoidable, mid-build blocks, rotations, review findings, rework, tripwires, the agent's last `subagent_tokens`, hand fixes. The dispatcher fills the facts, the owner the judgments. It is what makes two runs comparable without digging through transcripts. When a run ends, the dispatcher adds one row to its Runs table, which is the run's report.
 
 **When to pick which.** Dispatch suits a run of well-specified tickets with the owner available to answer and commit. Manual suits exploratory work, tickets that need the owner in the loop throughout, or a first ticket in an unfamiliar area.
 
@@ -226,7 +252,7 @@ flowchart LR
 
 **[declared]** Commit policy: `<stage-only | auto-commit | draft-PR | never-commit>`.
 
-The kit's default and the shape this template was refined under is **stage-only**: agents stage, the human commits and pushes. Even a commit message supplied earlier is not commit authorization. When a commit is warranted, **the agent prompts the owner with a proposed message** rather than composing one unprompted. Messages are short prose: a subject line plus at most a line or two; long reasoning belongs in the ticket line or the handoff. Reference the issue when one exists; include the internal version tag during pre-launch if the project keeps one.
+The kit's default and the shape this template was refined under is **stage-only**: agents stage, the human commits and pushes. Even a commit message supplied earlier is not commit authorization. Agents stage the paths they changed **by name**; `git add -A` / `--all` / `.` / `-u` are denied in the settings, so the owner's unrelated changes never ride along. When a commit is warranted, **the agent prompts the owner with a proposed message** rather than composing one unprompted. Messages are short prose: a subject line plus at most a line or two; long reasoning belongs in the ticket line or the handoff. Reference the issue when one exists; include the internal version tag during pre-launch if the project keeps one.
 
 **Review before push on risk surfaces.** Any change touching a path in `CLAUDE.md` "Risk Surfaces" runs `/code-review` (both axes: standards and spec) before it is staged for push. Where there are no pull requests, this is the gate.
 
@@ -253,6 +279,8 @@ Tiering template — adjust the model names to what is current, keep the shape:
 | Implementing well-specified tickets | Mid tier | The plan plus the spec pointer removes the ambiguity |
 | Mechanical fan-out (fixtures, renames, lint fixes, doc greps) | Small tier, as subagents | Cheap, parallel |
 | **Exception — risk surfaces** | Implement with any tier, **review with a top-tier model** before push | Review quality is non-negotiable where the risk is |
+
+**In dispatch mode** the dispatcher applies this table per ticket (§4.1): mid tier for `Tests: none` tickets, top tier for code and risk surfaces, shown to the owner before Phase 1.
 
 **Standing instruction for every session, handoff or not:** *ask the owner a clarification question whenever you are not sure of something or an open decision comes up, and explain the alternatives in simple terms.* It lives in `CLAUDE.md` "Output Preferences", in the handoff template, and in the handoff skill.
 
@@ -296,3 +324,4 @@ flowchart TD
 - `install.py` never touches `README.md`; it installs `CLAUDE.md`, `WORKFLOW.md`, `.claude/` and the empty `docs/handoff/archive/` scaffold, prompting on every conflict.
 - `/setup --refresh` is idempotent: discovered values are refreshed, declared sections are preserved, and sections the template gained since the last install (Area conventions, Compact Instructions, the Handoffs rule, the clarification instruction) are added if missing.
 - The kit's own changes are dated in its `CHANGELOG.md`; a project's own decisions live in its plan registries, its ADRs, or its handoffs — never only in a chat.
+- **A project that adapts the kit keeps `docs/kit-delta.md`**: one dated line per skill, agent, hook, template or rule that differs from the kit's version, and why. Carrying improvements back to the kit, or taking a newer kit, then starts from that list instead of a diff of every file.

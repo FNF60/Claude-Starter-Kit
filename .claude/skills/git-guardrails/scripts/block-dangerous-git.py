@@ -3,8 +3,9 @@
 
 Exit code 2 blocks the call and the message on stderr goes back to the model.
 
-How it works: it splits the command into segments (on ; & | and newlines, outside quotes),
-finds the git call in each segment, skips git's global options (-C <dir>, -c k=v, --no-pager
+How it works: it splits the command into segments (on ; & | and newlines, outside quotes,
+following the quoting rules of the shell that runs it: bash escapes with a backslash, PowerShell
+with a backtick; the tool name in the hook input says which), finds the git call in each segment, skips git's global options (-C <dir>, -c k=v, --no-pager
 ...) and checks the subcommand. Quoted text (a commit message, a grep pattern) is never
 mistaken for a git call, `git -C repo push` is caught, and `bash -c "git push"` /
 `powershell -Command git push` are looked into. It is a guardrail against accidents, not a
@@ -32,10 +33,34 @@ PREFIXES = {"env", "command", "nohup", "time", "call", "exec", "sudo"}
 OPTIONS_WITH_VALUE = {"-c", "--namespace", "--exec-path"}  # -C is matched through .lower()
 
 
-def split_segments(command):
-    """Split on ; & | and newlines that are outside quotes."""
+# The escape character of each shell: bash escapes with a backslash (outside quotes and inside
+# double quotes), PowerShell with a backtick; inside single quotes neither escapes anything.
+# In PowerShell a backslash is a plain character, so `"C:\dir\"` ends at the last quote; reading
+# it with bash rules would keep the string open and hide a later `; git push`. cmd: none.
+ESCAPES = {"bash": "\\", "powershell": "`", "cmd": None}
+
+
+def shell_of(head):
+    """The quoting rules a nested shell (bash -c, powershell -Command, cmd /c) uses."""
+    head = head[:-4] if head.endswith(".exe") else head
+    if head in ("powershell", "pwsh"):
+        return "powershell"
+    if head == "cmd":
+        return "cmd"
+    return "bash"
+
+
+def split_segments(command, shell="bash"):
+    """Split on ; & | and newlines that are outside quotes (escaped quotes do not close them)."""
+    esc = ESCAPES.get(shell)
     segments, current, quote = [], [], None
-    for ch in command:
+    i, n = 0, len(command)
+    while i < n:
+        ch = command[i]
+        if esc and ch == esc and quote != "'" and i + 1 < n:
+            current.append(ch + command[i + 1])  # escaped character: never a quote or separator
+            i += 2
+            continue
         if quote:
             current.append(ch)
             if ch == quote:
@@ -48,12 +73,17 @@ def split_segments(command):
             current = []
         else:
             current.append(ch)
+        i += 1
     segments.append("".join(current))
     return [s.strip() for s in segments if s.strip()]
 
 
-def tokenize(segment):
-    return re.findall(r'''"[^"]*"|'[^']*'|[^\s"']+''', segment)
+def tokenize(segment, shell="bash"):
+    esc = ESCAPES.get(shell)
+    if not esc:
+        return re.findall(r'''"[^"]*"|'[^']*'|[^\s"']+''', segment)
+    e = re.escape(esc)
+    return re.findall(r'''"(?:%s.|[^"%s])*"|'[^']*'|(?:%s.|[^\s"'%s])+''' % (e, e, e, e), segment, re.S)
 
 
 def unquote(token):
@@ -105,8 +135,8 @@ def check_git(args):
     return None
 
 
-def check_segment(segment, depth=0):
-    tokens = tokenize(segment)
+def check_segment(segment, depth=0, shell="bash"):
+    tokens = tokenize(segment, shell)
     i = 0
     while i < len(tokens) and (re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", tokens[i]) or basename(tokens[i]) in PREFIXES):
         i += 1
@@ -116,23 +146,24 @@ def check_segment(segment, depth=0):
     if head in ("git", "git.exe"):
         return check_git(tokens[i + 1:])
     if head in SHELLS and depth < 3:
+        inner = shell_of(head)
         rest = tokens[i + 1:]
         for k, tok in enumerate(rest):
             text = unquote(tok)
             if re.search(r"\s", text):
-                reason = check_command(text, depth + 1)
+                reason = check_command(text, depth + 1, inner)
                 if reason:
                     return reason
-            if text.lower() in ("-command", "-c") and k + 1 < len(rest):
-                reason = check_command(" ".join(unquote(t) for t in rest[k + 1:]), depth + 1)
+            if text.lower() in ("-command", "-c", "/c") and k + 1 < len(rest):
+                reason = check_command(" ".join(unquote(t) for t in rest[k + 1:]), depth + 1, inner)
                 if reason:
                     return reason
     return None
 
 
-def check_command(command, depth=0):
-    for segment in split_segments(command):
-        reason = check_segment(segment, depth)
+def check_command(command, depth=0, shell="bash"):
+    for segment in split_segments(command, shell):
+        reason = check_segment(segment, depth, shell)
         if reason:
             return reason
     return None
@@ -142,10 +173,11 @@ def main():
     try:
         data = json.load(sys.stdin)
         command = (data.get("tool_input") or {}).get("command") or ""
+        shell = "powershell" if data.get("tool_name") == "PowerShell" else "bash"
     except Exception:
         return 0  # nothing we can read, nothing to check
     try:
-        reason = check_command(command)
+        reason = check_command(command, 0, shell)
     except Exception as error:  # fail closed when git is involved
         if re.search(r"\bgit\b", command):
             print("BLOCKED: the git guard hook failed (%s) on: %s" % (error, command), file=sys.stderr)

@@ -112,7 +112,7 @@ What the kit installs is not only files; it is a session-to-session rhythm, refi
 | `/improve-codebase-architecture` | Spare cycles | Scan for deepening opportunities, present an HTML report, plan-interview the one you pick |
 | `/diagnosing-bugs` | Something's broken/slow | Structured diagnosis loop built around a tight pass/fail signal |
 | `/tdd` | Implementing, or about to refactor | Red → green cycle for new behavior and bug fixes; pin-first (green) tests that guard behavior before a refactor or extraction |
-| `/code-review` | Reviewing a diff; always before pushing a risk-surface change | Two-axis review — standards + spec — via parallel sub-agents |
+| `/code-review` | Reviewing a diff; always before pushing a risk-surface change, and on every code ticket in dispatch mode | Two-axis review — standards + spec — via parallel sub-agents |
 | `/loop-me` | Defining workflows | Stateful interview whose only output is workflow specs |
 | `/obsidian-vault` | Notes work | Read and write notes in your Obsidian vault |
 | `/git-guardrails` | Want hard git safety | Install a hook (Bash and PowerShell) that blocks push / reset --hard / clean -f / branch -D, and commit / rebase under a stage-only policy |

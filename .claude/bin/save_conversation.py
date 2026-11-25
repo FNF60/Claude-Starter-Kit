@@ -94,15 +94,22 @@ def list_sessions(cwd: Path) -> list:
                         continue
                     if obj.get('type') == 'user':
                         msg = obj.get('message', {})
-                        if msg.get('role') == 'user':
-                            for block in msg.get('content', []):
+                        if (msg.get('role') == 'user' and not obj.get('isSidechain')
+                                and not obj.get('isMeta')):
+                            content = msg.get('content', [])
+                            # A typed prompt is often stored as a plain string,
+                            # not a list of blocks; count both. Injected context
+                            # (system reminders, IDE envelopes) is not a turn.
+                            if isinstance(content, str):
+                                content = [{'type': 'text', 'text': content}]
+                            for block in content:
                                 if isinstance(block, dict) and block.get('type') == 'text':
+                                    text = _filter_user_text(block.get('text', ''))
+                                    if not text:
+                                        continue
                                     turn_count += 1
                                     if not first_preview:
-                                        first_preview = (
-                                            block.get('text', '')[:100]
-                                            .replace('\n', ' ')
-                                        )
+                                        first_preview = text[:100].replace('\n', ' ')
         except OSError:
             continue
 

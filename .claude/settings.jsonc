@@ -34,9 +34,9 @@
       // --- Files: full read everywhere, write/edit only inside the project ---
       "Read(**)",        // auto-approve project reads
       "Read(//**)",      // "//" = absolute path -> auto-approve reads anywhere on disk
-      "Edit(**)",        // relative patterns anchor to the project, so writes outside
-      "Write(**)",       // the project don't match here and fall through to a prompt
-      "MultiEdit(**)",
+      "Edit(**)",        // covers every file-writing tool (Edit, Write, MultiEdit); a
+                         // relative pattern anchors to the project, so writes outside
+                         // it don't match here and fall through to a prompt
 
       // --- Read-only / inspection shell ---
       "Bash(ls *)", "Bash(cat *)", "Bash(head *)", "Bash(tail *)", "Bash(wc *)",
@@ -205,6 +205,11 @@
     // clients (CLI vs VSCode vs Desktop) — treat these as guardrails, not a wall.
     // Real enforcement = OS sandboxing (see notes I sent alongside this file).
     "deny": [
+      // Name-based staging (WORKFLOW.md §7): agents stage the paths they changed, never
+      // everything, so the owner's unrelated changes are never swept into a commit.
+      "Bash(git add -A*)", "Bash(git add --all*)", "Bash(git add .)", "Bash(git add -u*)",
+      "PowerShell(git add -A*)", "PowerShell(git add --all*)", "PowerShell(git add .)", "PowerShell(git add -u*)",
+
       "Bash(rm -rf /)", "Bash(rm -rf /*)", "Bash(rm -rf ~)", "Bash(rm -rf ~/*)",
       "Bash(sudo rm *)", "Bash(mkfs *)", "Bash(mkfs.* *)", "Bash(dd *)", "Bash(shred *)",
       "Bash(sudo bash -c *)", "Bash(sudo sh -c *)", "Bash(sudo su *)", "Bash(su -*)",

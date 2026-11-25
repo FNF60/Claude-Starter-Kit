@@ -2,6 +2,56 @@
 
 The kit's own decision record: what changed, why, and the options not taken. Dated entries, newest first. A project that installs the kit keeps its own decisions in its plan registries, ADRs or handoffs — not here.
 
+## 2026-11-25 — Kit gaps closed: setup, plan register, hook quoting, fresh-install checks
+
+The owner listed what to close now and what waits (2026-11-25): close the kit's own gaps; the evidence from the legacy Java project's dispatch runs, the `ROTATE`-vs-`PARTIAL` choice, and a second model family wait for the end of that project's headless extraction.
+
+- **`/setup` asks for the new settings.** Existing projects: the scan lists `git status --short` paths as leave-alone candidates and Round 2 asks which are standing local changes (Q4); `--refresh` adds the Leave-alone line and the name-based staging sentence to an older `CLAUDE.md`. Greenfield writes `Leave-alone files: (none)`. The guardrails extra and the existing-project settings step mention the hook-alone choice (`git-guardrails` 3b). *Not taken:* asking greenfield projects (a fresh repo has no standing changes).
+- **`/plan-interview` writes a stage register** (`WORKFLOW.md` §2.1) whenever the plan has more than one ticket: stages and tickets, test kind per ticket by the kind of work (PIN / PROOF / none), checkable Done when, tickets sized to ~40 % of an agent's window, open fields (branch) asked one at a time; dispatch closes with the exact `/next-ticket <plan> <stage>` line. *Not taken:* a register only when dispatch is chosen (it keeps a manual run honest too).
+- **Hook quoting fixed** (the false positive documented yesterday). The splitter and tokenizer now follow the running shell's escape rules, taken from the hook input's tool name: bash `\`, PowerShell backtick (where `\"` really ends a string, so applying bash rules there would hide a later `; git push`); a nested `bash -c` / `powershell -Command` / `cmd /c` uses its own shell's rules. Found on the way: `cmd /c git push` was not caught at all (`/c` was not read as a command flag); now it is. Self-test: 9 new shell cases plus every existing case run under both shells, and a PowerShell end-to-end case; 0 failures. The new cases fail against the old script (3 of 4 checked), so they bite. *Not taken:* bash rules for both tools (a PowerShell false negative).
+- **Fresh install fixed:** nothing created `docs/Supplementary AI md files/Conversations/`, and `save_conversation.py` refuses to write without it, so a fresh project's first dispatch ticket close would fail at `save-agent`. `install.py` now ships its `.gitkeep` (38 files), and `/setup` scaffolds it.
+- Touched: `.claude/skills/setup/skill.md`, `.claude/skills/setup/ONBOARD-SCAN.md`, `.claude/skills/plan-interview/SKILL.md`, `.claude/skills/git-guardrails/SKILL.md` and both scripts, `install.py`, `docs/Supplementary AI md files/Conversations/.gitkeep` (new).
+
+**Verified (2026-11-25), settling items from the 2026-11-24 "Still not verified" list:**
+- **Clean install, partly:** `install.py` into an empty `git init` repo: 38 files, settings parse, hook self-test passes, `next-ticket` and its log template present. Not yet: a new interactive session there running `/next-ticket` on one small ticket (needs the owner's session).
+- **The hook through a fresh install + `/git-guardrails`, settled:** steps followed as written in the fresh repo (project scope, stage-only, hook alone), then a headless `claude -p` session there: the main session's `git -C . branch -D guardrail-probe-does-not-exist` and a `general-purpose` subagent's `git commit -m guard-probe` were both refused by the hook (exit 2, the kit's message); the repo still had no commits. Side note: the workspace was untrusted, so its allow list was ignored, but the hook still ran.
+- **Guards inside subagents, settled for the hook** (`git commit` refused inside a subagent, above; `git push` had been seen in the legacy project). The deny-list half stays untested: under the hook-alone choice there is no deny rule to hit.
+- **The overview page in a browser, settled:** rendered in headless Chrome from a local server; all four diagrams draw, section 3 with the 2026-11-24 changes, no Mermaid errors.
+
+**Still not verified:** the session part of the clean install (above); "an agent fails twice" (only real use produces it); a register written by `/plan-interview` driving a real dispatch run; every item the legacy project's runs will settle (see the 2026-11-24 entries); a second model family.
+
+## 2026-11-24 (later) — The legacy Java project's dispatch variant carried back
+
+The 2026-11-21 entry deferred the legacy Java project's dispatch changes until its extraction was done. The same day as the entry below, the owner compared that project's setup with the kit both ways and chose to carry back now every item that is not specific to the project (owner, 2026-11-24, item by item; all generic items approved). That project ran one pilot ticket (P0-1) under its variant; its evidence is that one run plus its kit-delta list, so everything below is **adopted, not verified in the kit**. In the other direction, the project took this kit's dispatcher budget check (with its own `PARTIAL` instead of `ROTATE`), transcripts, the review of untracked files, the split hand-over, the stage-level milestone check, and this hook with its self-test.
+
+**Agent discipline** (`ticket-agent.md`, `next-ticket/SKILL.md`):
+- **Review keyed on the test kind, not only on risk surfaces.** Every ticket whose test kind is not `none` (or that touches a risk surface) returns `REVIEW_NEEDED`; Finalize runs only after the findings arrive, and the Build message says "Return REVIEW_NEEDED before staging." Evidence: the pilot agent read "Approved: phase 2" as permission to stage and skipped the review. *Not taken:* keep risk-surface-only review.
+- **No test suite in Phase 1.** The dispatcher runs the baseline in the background while the agent plans; the agent's distrust check is git only. Saves a full suite run per ticket and avoids two runs on shared build output. *Not taken:* the agent running tests in its distrust check (the kit's old step 3).
+- **Snapshot / golden diff = `BLOCKED`** with an attribution; agents never regenerate fixtures.
+- **`Found:`** in the report: bugs seen on the way are listed, never fixed inside the ticket.
+
+**Ticket shape and measurement:**
+- **`Fit:` line in Phase 1**, with a proposed split into lettered parts; the owner approves and the dispatcher edits the register; a fresh agent takes part a. Complements `ROTATE` (which still handles a misjudged fit).
+- **Model per ticket** (§4.1, §9): mid tier for `Tests: none`, top tier for code and risk surfaces, shown to the owner.
+- **Dispatcher mistakes asked, review tokens logged:** at every hand-over the dispatcher asks the owner one line about its own mistakes and logs the answer, "none" included (the kit's 11-24 table counted only mistakes the owner happened to volunteer); the `/code-review` run's `subagent_tokens` gets its own column (the legacy project's pilot review used 90K, invisible in the old log).
+- **Dispatch log:** `docs/dispatch-log.md` (in `docs/`, not `docs/handoff/`: it is never consumed), with a Tickets table (one row per ticket) and a Runs table (one summary row per run, which is the run's report; no separate report file), created from `next-ticket/dispatch-log-template.md` (a template in the skill folder, because `install.py` has no create-only mode and a seeded log would conflict on every refresh).
+- **Stage register** (`WORKFLOW.md` §2.1, new): fixed per-stage fields (ID, Dep, Branch, Status, Scope, Spec, Tests, Verify, Done when, Tickets, Done); `/next-ticket [<plan>] [<stage or ticket id>]` reads only the register notes and one stage block. A plan without a register still dispatches from the live handoff. *Not taken:* waiting for the project's extraction to finish (the 2026-11-21 plan).
+
+**Git and settings:**
+- **Name-based staging:** `git add -A` / `--all` / `.` / `-u` denied in `settings.json` and `.jsonc` (both tools), stated in `CLAUDE.md` and `WORKFLOW.md` §7.
+- **Branch gate** and **leave-alone list** (`CLAUDE.md` "Don't Touch"): the clean-tree check ignores the owner's standing local changes instead of demanding a fully clean tree.
+- **`Write(**)` / `MultiEdit(**)` removed** from the allow list: `Edit(**)` already covers every file tool, so they were redundant, not broken.
+- **`git-guardrails` step 3b:** the owner chooses hook plus permission rules (default) or the hook alone, which makes the hook's firing observable in the main session and inside subagents. Also documented: a **known false positive** (a backslash-escaped double quote inside a bash double-quoted string ends the quote early for the splitter, so a quoted pattern containing a blocked git command can be blocked); left unfixed because the escape rules differ between bash and PowerShell.
+
+**Practices:**
+- **The dispatcher's named edit list** (register `Status:` lines and approved splits, the dispatch log, the handoff's `Mode:` line, `docs/kit-delta.md`, ratifications) replaces "never edits project files", which "go manual" already contradicted.
+- **`docs/kit-delta.md`** (`WORKFLOW.md` §12): a project that adapts the kit keeps one dated line per difference, so carrying back starts from a list.
+
+**Fix found while porting, affects the session picker:** `save_conversation.py list-sessions` counted only list-shaped user content, so a session whose prompts are stored as plain strings showed 0 turns and no preview, and it counted meta records (skill bodies) as turns. Now it counts both shapes, skips sidechain and meta records, and previews the first real prompt. The 2026-10-28 parser fix had covered the transcript body only.
+
+- Touched: `.claude/agents/ticket-agent.md`, `.claude/skills/next-ticket/SKILL.md` and `dispatch-log-template.md` (new), `.claude/bin/save_conversation.py`, `.claude/settings.json`, `.claude/settings.jsonc`, `.claude/SETTINGS_NOTES.md`, `.claude/skills/git-guardrails/SKILL.md`, `CLAUDE.md`, `WORKFLOW.md` (§2.1 new, §4.1 diagram and text, §7, §9, §12), `docs/workflow-overview.html` (section 3), `README.md`, `install.py`.
+- **Not verified:** any of the above in a kit install or a dispatch run under the kit's own files; the stage register with a plan that also uses milestones; `dispatch-log-template.md` creation by the dispatcher. The legacy project's next dispatch run is measured against the table below.
+
 ## 2026-11-24 — Dispatch mode verified in use; four fixes carried back
 
 The 2026-10-27 entry left dispatch mode "not verified in the kit: an end-to-end dispatch run". It has since run a whole build in its source project (a Python + React greenfield app). That project's copy grew fixes the kit never got, so the copy that ran is newer than the kit's. The owner chose to port them now rather than wait for the legacy Java project's dispatch version announced on 2026-11-21 (owner, 2026-11-24: "Port now"). *Not taken:* record the evidence only and port later; wait and do both projects in one pass. That project's version merges on top of this one when it is done.

@@ -30,6 +30,12 @@ Once the interview reaches shared understanding, **write the result down** so it
 
 - At minimum, a **step-by-step plan**: an ordered list of concrete steps to implement, each specific enough that an implementer agent could follow it without asking a single question. Include what's being built, the sequence, and any decisions/constraints resolved during the interview.
 - Where the conversation produced them, also leave the domain artifacts from the `/domain-modeling` pass (`CONTEXT.md` entries, ADRs).
+- **A stage register** (`WORKFLOW.md` §2.1) at the end of the plan whenever it has more than one ticket. It is what `/next-ticket` reads, and it keeps a manual run honest too. Group the steps into stages (dependency-ordered, each with a one-line goal) and tickets (`<stage>-<n>`, one focused commit each), then write one `### <stage id> <title>` block per stage with the fixed fields: ID, Dep, Branch, Status (`not started`), Scope (In / Out), Spec (pointers only), Tests, Verify, Done when, Tickets, Done (empty). Fill them from the interview:
+  - **Tests** per ticket, by the kind of work (`/tdd`, pin-and-proof): refactor, move or delete → PIN; new rule or bug fix → PROOF; docs, design or measurement → `none`. Never PIN and PROOF in one ticket.
+  - **Done when**: checkable conditions only (a test passes, a command's output, a file exists), never "works well".
+  - **Size**: a ticket a fresh agent can plan and build inside about 40 % of its window. When unsure, split it now.
+  - **Branch** and anything else the interview did not settle are questions: ask them like any other, one at a time, with your recommendation. Far-off stages may mark their tickets *provisional*, to be re-cut when the stage starts.
+  - Add the register's notes above the first block: what "Spec" pointers refer to, where the Quality Bar lives, and that sizes are a first cut.
 
 Save the plan where the project keeps planning docs (e.g. `docs/` or `.scratch/`); if there's no obvious home, ask the user where they want it. State the path when you're done.
 
@@ -40,7 +46,7 @@ When the plan is written, ask the owner which mode to run it in (`WORKFLOW.md` �
 - **Manual** — one session per ticket, as before: the owner opens each session from its handoff.
 - **Dispatch** — one session runs `/next-ticket` and gives each ticket to a fresh agent; the owner answers questions, approves plans and commits in that one session, and replies "next" between tickets.
 
-Record the answer in the `Mode:` line of the handoff that closes this session (or, if none is written, in auto-memory). The owner can switch later at any time by asking.
+Record the answer in the `Mode:` line of the handoff that closes this session (or, if none is written, in auto-memory). For dispatch, also give the exact start line: `/next-ticket <plan path> <first stage id>`. The owner can switch later at any time by asking.
 
 ## Key rules
 
